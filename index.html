@@ -1,0 +1,2386 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>מערכת ניהול פנימייה Pro Max — גרסה 5.1 (היסטוריית שיבוצים)</title>
+  <style>
+    /* ==================================== */
+    /* הגדרות עיצוב (CSS)                   */
+    /* ==================================== */
+
+    /* ------------------------------------ */
+    /* משתני צבעים ועיצוב (ערכת יום)
+    /* ------------------------------------ */
+    :root {
+      --bg: #f8fafc;           /* רקע כללי */
+      --panel: #ffffff;        /* רקע לכרטיסיות וחלונות קופצים */
+      --muted: #f1f5f9;        /* רקע משני (לשוניות, כפתורים) */
+      --border: #e2e8f0;       /* צבע גבולות */
+      --text: #0f172a;         /* צבע טקסט ראשי */
+      --text-dim: #64748b;     /* צבע טקסט משני (אפור) */
+      --accent: #10b981;       /* צבע הדגשה (ירוק) */
+      --accent-2: #059669;     /* צבע הדגשה כהה יותר */
+      --warn: #f59e0b;         /* צבע אזהרה (צהוב) */
+      --danger: #ef4444;       /* צבע סכנה (אדום) */
+      --danger-2: #b91c1c;     /* צבע סכנה כהה יותר */
+      --success: #10b981;      /* צבע הצלחה (ירוק) */
+      --shadow: 0 4px 12px rgba(0,0,0,.08); /* הצללה */
+      --radius: 14px;          /* רדיוס פינות */
+    }
+
+    /* ------------------------------------ */
+    /* עיצוב בסיסי וכללי
+    /* ------------------------------------ */
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font-family: "Heebo", system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans Hebrew", "Rubik", sans-serif;
+    }
+
+    .app {
+      max-width: 1400px; margin: 0 auto; padding: 16px; height: 100vh; display: flex; flex-direction: column;
+    }
+
+    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    header h1 { font-size: 1.45rem; margin: 0; letter-spacing: 0.3px; }
+
+    /* עיצוב לשוניות (Tabs) */
+    .tabs {
+      display: inline-flex; background: var(--muted); border: 1px solid var(--border); border-radius: 999px; overflow: hidden;
+    }
+    .tab-btn {
+      padding: 10px 16px; background: transparent; border: 0; color: var(--text-dim); cursor: pointer; font-weight: 600;
+    }
+    .tab-btn.active { color: var(--text); background: var(--panel); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+
+    /* פריסה ראשית (גריד) */
+    .main {
+      flex: 1; display: grid; grid-template-columns: 3fr 1fr; gap: 12px; min-height: 0;
+    }
+
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+
+    /* ==================================== */
+    /* צד ימין: תצוגת עץ מבנים
+    /* ==================================== */
+    .tree-wrap { padding: 10px; display: flex; flex-direction: column; min-height: 0; }
+    .tree-header { display:flex; gap:8px; align-items:center; justify-content: space-between; margin-bottom: 8px; }
+    .tree {
+      flex: 1; overflow: auto; padding: 12px; background: var(--muted); border-radius: 10px; border: 1px solid var(--border);
+    }
+    
+    /* מעטפת לפריט עץ (נועד לקו הימני) */
+    .tree-node-wrapper { 
+        margin-bottom: 6px; 
+        border-right: 2px solid var(--border);
+        padding-right: 4px;
+    }
+    .tree-node-wrapper[data-type="b"] { border-right-color: var(--text); } /* צבע קו למבנה */
+    .tree-node-wrapper[data-type="f"] { border-right-color: #a9c6f5; } /* צבע קו לקומה */
+    .tree-node-wrapper[data-type="r"] { border-right-color: #f9d77f; } /* צבע קו לחדר */
+
+    /* פריט בודד בעץ (מבנה, קומה) */
+    .tree-item { 
+        padding: 10px;
+        border-radius: 10px; 
+        border: 1px solid transparent; 
+        display: flex; 
+        align-items: center; 
+        gap: 8px; 
+        transition: all .15s ease;
+        box-shadow: 0 1px 3px rgba(0,0,0,.05); 
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+    }
+    .tree-item:hover { background: rgba(0,0,0,.04); cursor: pointer; }
+    .tree-item.selected { outline: 3px solid var(--accent); border-color: var(--accent); } /* פריט נבחר */
+
+    /* בידול ויזואלי לפי סוג */
+    .tree-item[data-type="b"] { /* מבנה */
+        background: var(--panel); 
+        border: 2px solid var(--text-dim);
+        font-size: 1.15rem;
+        font-weight: 700;
+        margin-top: 15px; 
+        padding: 10px;
+    }
+    .tree-item[data-type="f"] { /* קומה */
+        background: #e9f5ff; /* תכלת */
+        border: 1px solid #a9c6f5;
+        font-weight: 600;
+        padding: 10px;
+    }
+    
+    /* ------------------------------------ */
+    /* עיצוב חדרים ומיטות
+    /* ------------------------------------ */
+    .tree-item[data-type="r"] { /* חדר (משמש ככותרת למיטות) */
+        background: #fff8e1; /* צהוב בהיר */
+        border: 1px solid #f9d77f;
+        box-shadow: none;
+        display: flex;
+        flex-direction: row;
+        padding: 10px;
+        transition: outline .15s ease; 
+        gap: 8px;
+    }
+    
+    /* קונטיינר המיטות (בתוך החדר) */
+    .beds-container {
+        display: flex;
+        flex-wrap: wrap; 
+        gap: 8px; 
+        padding: 8px 4px 4px 4px; 
+        border-top: 1px dashed #f9d77f; 
+        margin-top: 4px;
+        margin-left: 2px;
+    }
+    
+    /* תא מיטה בודד */
+    .bed-cell {
+        width: 100px;
+        min-height: 70px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all .15s ease;
+        padding: 4px;
+        text-align: center;
+        line-height: 1.2;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,.05);
+    }
+    .bed-cell:hover { transform: translateY(-1px); }
+    .bed-cell.unassigned { border-color: var(--warn); background: #fef3c7; color: var(--text); } /* מיטה פנויה */
+    .bed-cell.assigned { border-color: var(--success); background: #d1fae5; color: var(--text); } /* מיטה תפוסה */
+    .bed-cell.selected-bed { outline: 3px solid var(--danger); border-color: var(--danger); } /* מיטה נבחרה */
+
+    .bed-number { font-weight: 800; font-size: 1em; }
+    .bed-student-name { font-size: 0.75em; color: var(--text-dim); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bed-cell.assigned .bed-student-name { color: var(--accent-2); }
+    
+    /* פריט מיטה (מוסתר - המיטות מוצגות כ-bed-cell) */
+    .tree-item[data-type="bed"] { display: none; } 
+
+    .tree-label { flex: 1; }
+    
+    .tree-children {
+        margin-right: 25px; /* הזחה של ילדים */
+    }
+
+    /* עיצוב "צ'יפים" (תגיות) */
+    .chip { font-size: 12px; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-dim); background: var(--panel); }
+    .chip.type { background: var(--border); color: var(--text); }
+    .chip.assigned { color: var(--success); border-color: var(--success); background: #d1fae5; }
+    .chip.unassigned { color: var(--warn); border-color: var(--warn); background: #fef3c7; }
+    .chip.dummy { color: var(--text-dim); border-color: var(--border); background: var(--muted); }
+
+    /* ==================================== */
+    /* צד שמאל: פאנל פעולות
+    /* ==================================== */
+    .actions { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .actions h3 { margin: 0; font-size: 1.2rem; }
+    .muted { color: var(--text-dim); }
+
+    /* ------------------------------------ */
+    /* כפתורים וטפסים
+    /* ------------------------------------ */
+    .btn {
+      padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--muted); color: var(--text);
+      font-weight: 700; cursor: pointer; transition: .15s transform ease, .2s background ease; box-shadow: var(--shadow);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .btn.primary { background: var(--accent-2); border-color: var(--accent); color: white; }
+    .btn.warn { background: #fcd34d; border-color: var(--warn); color: var(--text); }
+    .btn.danger { background: var(--danger); border-color: var(--danger-2); color: white; }
+    .btn.ghost { background: transparent; }
+    .btn.secondary { background: var(--muted); border-color: var(--border); }
+
+    .hidden { display: none !important; }
+    .students { display: flex; flex-direction: column; gap: 10px; }
+    .toolbar { display: flex; gap: 8px; align-items: center; }
+    .search { flex: 1; }
+    input, select, textarea {
+      padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel); color: var(--text);
+      width: 100%; /* שינוי: קבע רוחב 100% כברירת מחדל */
+    }
+    textarea { min-height: 60px; }
+
+    /* ------------------------------------ */
+    /* טבלה (מסך בחורים)
+    /* ------------------------------------ */
+    table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 10px; table-layout: fixed; /* שינוי: פריסה קבועה */ }
+    thead { background: var(--muted); }
+    th, td { 
+      text-align: right; padding: 10px; border-bottom: 1px solid var(--border); 
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; /* שינוי: מניעת שבירת שורות */
+    }
+    tbody tr:hover { background: rgba(0,0,0,.03); }
+    /* שינוי: הוספת cursor: pointer לשורות הטבלה */
+    tbody tr { cursor: pointer; }
+    tbody tr.selected { outline: 2px solid var(--accent) !important; }
+
+    /* ------------------------------------ */
+    /* סטטיסטיקות
+    /* ------------------------------------ */
+    .stats { display:flex; gap:12px; flex-wrap: wrap; }
+    .stat { padding: 10px 14px; background: var(--muted); border:1px solid var(--border); border-radius: 12px; }
+
+    /* ------------------------------------ */
+    /* מודאל (חלון קופץ)
+    /* ------------------------------------ */
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; z-index: 50; }
+    .modal { 
+      background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 16px; 
+      min-width: 380px; max-width: 90vw; box-shadow: var(--shadow); 
+      max-height: 90vh; overflow-y: auto; /* שינוי: הוספת גלילה למודאל ארוך */
+    }
+    .modal h4 { margin: 0 0 10px 0; }
+    .modal .row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+    .modal .row-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
+    /* שינוי: גריד של 3 עמודות */
+    .modal .row-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 8px; }
+
+
+    .row-inline { display: flex; gap: 8px; align-items: center; }
+    .flex-1 { flex: 1; }
+    .error-msg { color: var(--danger); font-size: 0.9em; margin-top: -4px; margin-bottom: 4px; }
+  
+    /* הוספה: עיצוב קונטיינר היסטוריית מיטה */
+    #bed-history {
+        border-top: 1px solid var(--border);
+        padding-top: 10px;
+        margin-top: 10px;
+    }
+    #bed-history h4 { 
+        margin: 0 0 8px 0; 
+        font-size: 1rem; 
+        color: var(--text);
+    }
+    #bed-history ul { 
+        list-style: none; 
+        padding: 0; 
+        margin: 0; 
+        max-height: 200px; 
+        overflow-y: auto; 
+        border: 1px solid var(--border);
+        border-radius: 8px;
+    }
+    #bed-history li { 
+        padding: 8px 10px; 
+        border-bottom: 1px dashed var(--border); 
+        font-size: 0.9em; 
+        line-height: 1.4;
+    }
+    #bed-history li:last-child { border: 0; }
+    #bed-history li small { 
+        color: var(--text-dim); 
+        display: block; 
+        font-size: 0.9em;
+    }
+    #bed-history .status-moved { color: var(--warn); }
+    #bed-history .status-deleted { color: var(--danger); }
+  </style>
+</head>
+<body>
+
+  <!-- ================================================== -->
+  <!--  מבנה האפליקציה (HTML)                             -->
+  <!-- ================================================== -->
+  <div class="app" id="app">
+    
+    <!-- ------------------------------------ -->
+    <!--  כותרת עליונה ולשוניות
+    <!-- ------------------------------------ -->
+    <header>
+      <h1>מערכת ניהול פנימייה Pro Max — גרסה 5.1 (היסטוריית שיבוצים)</h1> <!-- שינוי: עדכון גרסה בכותרת -->
+      <div class="tabs" role="tablist">
+        <button class="tab-btn active" id="tab-manage" aria-selected="true">ניהול ושיבוצים</button>
+        <button class="tab-btn" id="tab-students" aria-selected="false">ניהול בחורים</button>
+      </div>
+    </header>
+
+    <!-- ================================================== -->
+    <!--  אזור 1: ניהול ושיבוצים (תצוגת עץ)
+    <!-- ================================================== -->
+    <section id="pane-manage" class="main">
+      
+      <!-- ------------------------------------ -->
+      <!--  צד ימין: עץ מבנים
+      <!-- ------------------------------------ -->
+      <div class="card tree-wrap">
+        <div class="tree-header">
+          <!-- סטטיסטיקות -->
+          <div class="stats">
+            <div class="stat" id="stat-students">בחורים: 0</div>
+            <div class="stat" id="stat-unassigned">לא משובצים: 0</div>
+            <div class="stat" id="stat-assigned">משובצים: 0</div>
+            <div class="stat" id="stat-beds-free">מיטות פנויות: 0</div>
+          </div>
+          <!-- כפתורי ייבוא/ייצוא ואיפוס -->
+          <div class="row-inline" style="gap: 12px; margin-right: auto;">
+            <button class="btn secondary" id="btn-export-db">גיבוי ל-JSON</button>
+            <button class="btn secondary" id="btn-import-db">טען גיבוי (JSON)</button>
+            <button class="btn danger" id="btn-reset-data">איפוס נתונים</button>
+          </div>
+          <!-- כפתור הוספת מבנה -->
+          <div class="row-inline">
+            <button class="btn primary" id="btn-add-building">הוסף מבנה חדש</button>
+          </div>
+        </div>
+        <!-- קונטיינר של עץ המבנים (ירונדר ע"י JS) -->
+        <div class="tree" id="tree"></div>
+      </div>
+
+      <!-- ------------------------------------ -->
+      <!--  צד שמאל: פאנל פעולות
+      <!-- ------------------------------------ -->
+      <aside class="card actions" id="actions">
+        <h3 id="actions-title">בחר פריט מהעץ</h3>
+        <div class="muted" id="actions-details">—</div>
+        <!-- כפתורי פעולה (ירונדרו ע"י JS) -->
+        <div id="actions-buttons" style="display: grid; gap: 8px; grid-auto-rows: min-content;"></div>
+        
+        <!-- הוספה: קונטיינר להיסטוריית מיטה -->
+        <div id="bed-history" class="hidden"></div>
+
+        <div style="margin-top:auto"></div>
+        <!-- כפתור מחיקה -->
+        <button class="btn danger" id="btn-delete" disabled>מחק פריט נבחר</button>
+      </aside>
+    </section>
+
+    <!-- ================================================== -->
+    <!--  אזור 2: ניהול בחורים (טבלה) - מוסתר בתחילה
+    <!-- ================================================== -->
+    <section id="pane-students" class="hidden">
+      <div class="card students" style="padding: 12px;">
+        <!-- סרגל כלים -->
+        <div class="toolbar">
+          <input id="search-student" class="search" placeholder="חפש בחור לפי שם, ת.ז, כיתה או ישוב…" /> <!-- שינוי: עדכון placeholder -->
+          <button class="btn primary" id="btn-add-student">הוסף בחור חדש</button>
+          <button class="btn secondary" id="btn-import-students">ייבוא מ-CSV</button>
+          <button class="btn" id="btn-edit-student" disabled>ערוך פרטים</button>
+          <button class="btn secondary" id = "btn-export-students-csv">ייצא רשימת בחורים ל-CSV</button>
+          <button class="btn danger" id="btn-del-student" disabled>מחק בחור נבחר</button>
+        </div>
+        <!-- אלמנטים מוסתרים לבחירת קבצים -->
+        <input type="file" id="csv-file-input" accept=".csv" class="hidden" />
+        <input type="file" id="json-file-input" accept="application/json" class="hidden" />
+        <!-- טבלת בחורים -->
+        <div style="overflow:auto;">
+          <table id="tbl-students">
+            <!-- שינוי: עדכון כותרות הטבלה -->
+            <thead>
+              <tr>
+                <th style="width: 15%">שם משפחה</th>
+                <th style="width: 15%">שם פרטי</th>
+                <th style="width: 12%">תעודת זהות</th>
+                <th style="width: 10%">כיתה</th>
+                <th style="width: 15%">ישוב</th>
+                <th style="width: 13%">טלפון</th>
+                <th style="width: 20%">מיקום שיבוץ</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ================================================== -->
+  <!--  מודאל (חלון קופץ) - מוסתר בתחילה
+  <!-- ================================================== -->
+  <div class="modal-backdrop hidden" id="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <h4 id="modal-title">כותרת</h4>
+      <div id="modal-body"></div>
+      <div class="row-inline" style="justify-content: flex-start; margin-top: 10px;">
+        <button class="btn primary" id="modal-ok">אישור</button>
+        <button class="btn" id="modal-cancel">ביטול</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================== -->
+  <!--  קוד JavaScript
+  <!-- ================================================== -->
+  <script>
+    // ==================================================
+    //            פרק 1: שמירת נתונים (LocalStorage)
+    // ==================================================
+    // הגדרת המפתח הייחודי לאחסון הנתונים בדפדפן
+    const STORAGE_KEY = 'pnimiyot_db_v4_excel'; // נשאר אותו מפתח (תואם v5.0)
+    
+    /**
+     * פונקציה לטעינת מסד הנתונים מה-LocalStorage.
+     * @returns {object} אובייקט מסד הנתונים
+     */
+    function loadDB() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      // אם אין נתונים שמורים, החזר מבנה נתונים התחלתי (ריק)
+      if (!raw) return { seq: {building:1, floor:1, room:1, bed:1, student:1}, buildings: [], students: [] };
+      try {
+        // נסה לפענח את ה-JSON מהטקסט השמור
+        return JSON.parse(raw);
+      } catch {
+        // במקרה של שגיאה בפענוח (למשל, נתונים פגומים), החזר מבנה נתונים ריק
+        return { seq: {building:1, floor:1, room:1, bed:1, student:1}, buildings: [], students: [] };
+      }
+    }
+
+    /**
+     * פונקציה לשמירת מסד הנתונים הנוכחי (DB) ב-LocalStorage.
+     * לאחר השמירה, מרעננת את כל התצוגה.
+     */
+    function saveDB() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
+      refreshAll(); // רענון כללי של הממשק
+    }
+
+    // טעינת הנתונים בפתיחת הדף למשתנה גלובלי
+    let DB = loadDB();
+
+    // ==================================================
+    //            פרק 2: פונקציות עזר כלליות (Helpers)
+    // ==================================================
+    
+    // קיצורים לבחירת אלמנטים ב-DOM
+    const el = (q, root=document) => root.querySelector(q); // בחירת אלמנט יחיד
+    const els = (q, root=document) => Array.from(root.querySelectorAll(q)); // בחירת כל האלמנטים התואמים
+    
+    /**
+     * פונקציית עזר לחיפוש לפי מזהה (id) בתוך מערך
+     * @param {number|string} id - המזהה לחיפוש
+     * @returns {function} פונקציית השוואה
+     */
+    const byId = id => (n) => n.id === id;
+
+    /**
+     * פותח מודאל "אישור פעולה" ומחזיר Promise.
+     * @param {string} message - ההודעה שתוצג למשתמש
+     * @returns {Promise<boolean>} - מחזיר true אם המשתמש לחץ "אישור", אחרת false
+     */
+    function confirmDialog(message) {
+      return new Promise((resolve) => {
+        showModal(
+          'אישור פעולה',
+          `<div class="row">${escapeHtml(message)}</div>`,
+          () => resolve(true),  // אם המשתמש לחץ "אישור"
+          () => resolve(false) // אם המשתמש לחץ "ביטול"
+        );
+      });
+    }
+
+    /**
+     * פותח מודאל "שגיאה" עם הודעה.
+     * @param {string} message - הודעת השגיאה להצגה
+     */
+    function errorDialog(message) {
+      showModal('שגיאה', `<div class="row"><p class="error-msg" style="font-size:1.1rem; text-align:center">${escapeHtml(message)}</p></div>`, () => {}, null);
+    }
+
+    /**
+     * מאבטח מחרוזת טקסט לפני הכנסתה ל-HTML (מונע XSS).
+     * @param {string} s - המחרוזת לניקוי
+     * @returns {string} - המחרוזת המנוקה
+     */
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"]+/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+    }
+
+    /**
+     * מפענח קלט של טווחים (למשל: "1-3, 5, 10") למערך של מספרים או מחרוזות.
+     * @param {string} input - קלט המשתמש
+     * @param {boolean} isNumeric - האם להחזיר מספרים או מחרוזות
+     * @returns {Array<number|string>} - מערך של הערכים
+     */
+    function parseRange(input, isNumeric = true) {
+      const parts = input.split(',').map(p => p.trim()).filter(p => p);
+      const results = new Set();
+      
+      for (const part of parts) {
+        if (part.includes('-') || part.includes('–') || part.includes('—')) { // תמיכה במקפים שונים
+          const [startStr, endStr] = part.split(/[-–—]/);
+          const start = Number(startStr);
+          const end = Number(endStr);
+
+          if (Number.isFinite(start) && Number.isFinite(end) && start <= end) {
+            for (let i = start; i <= end; i++) {
+              results.add(isNumeric ? i : String(i));
+            }
+            continue;
+          }
+        }
+
+        const val = isNumeric ? Number(part) : part;
+        if (isNumeric) {
+          if (Number.isFinite(val) && val > 0) results.add(val);
+        } else if (val) {
+          results.add(val);
+        }
+      }
+      return Array.from(results);
+    }
+
+    /**
+     * הוספה: פונקציית עזר לפרמוט תאריך ושעה
+     * @param {string} isoString - תאריך בפורמט ISO
+     * @returns {string} - תאריך ושעה בפורמט קריא
+     */
+    function formatDate(isoString) {
+      if (!isoString) return 'לא ידוע';
+      return new Date(isoString).toLocaleString('he-IL', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+
+    // ==================================================
+    //            פרק 3: ניהול מודאל (חלון קופץ)
+    // ==================================================
+    
+    /**
+     * פונקציה מרכזית להצגת חלון קופץ (מודאל).
+     * @param {string} title - הכותרת של החלון
+     * @param {string} html - תוכן ה-HTML שיוצג בגוף החלון
+     * @param {function | null} onOk - פונקציה שתופעל בלחיצה על "אישור". אם null, הכפתור מוסתר.
+     * @param {function | string | null} onCancel - פונקציה שתופעל בלחיצה על "ביטול". יכול להיות גם טקסט לכפתור.
+     */
+    function showModal(title, html, onOk, onCancel) {
+      const modal = el('#modal-backdrop .modal');
+      modal.scrollTo(0, 0); // שינוי: אפס גלילה בפתיחת מודאל
+      el('#modal-title').textContent = title;
+      el('#modal-body').innerHTML = html;
+      const back = el('#modal-backdrop');
+      back.classList.remove('hidden');
+      back.setAttribute('aria-hidden', 'false');
+      const ok = el('#modal-ok');
+      const cancel = el('#modal-cancel');
+      
+      // הצג או הסתר כפתור "אישור"
+      ok.style.display = onOk ? 'inline-block' : 'none';
+      
+      // הגדר טקסט כפתור "ביטול" (יכול להיות "ביטול" או "סגור")
+      cancel.textContent = (typeof onCancel === 'string') ? onCancel : (onOk ? 'ביטול' : 'סגור');
+
+      // פונקציית ניקוי (מופעלת בסגירת המודאל)
+      const cleanup = () => {
+        if (document.activeElement) document.activeElement.blur(); // הסרת פוקוס
+        ok.onclick = null; // ניקוי מאזינים
+        cancel.onclick = null;
+        back.classList.add('hidden'); // הסתרת המודאל
+        back.setAttribute('aria-hidden', 'true');
+      };
+      
+      // חיבור המאזינים לכפתורים
+      ok.onclick = () => { cleanup(); onOk && onOk(); };
+      cancel.onclick = () => { 
+        cleanup(); 
+        if (typeof onCancel === 'function') onCancel(); 
+      };
+    }
+
+    // ==================================================
+    //     פרק 4: לוגיקת נתונים וניהול DB (CRUD)
+    // ==================================================
+
+    // --------------------------------------------------
+    //   חלק 4.1: פונקציות חיפוש (Finders)
+    // --------------------------------------------------
+
+    function findBuilding(buildingId) { return DB.buildings.find(byId(buildingId)); }
+    
+    function findFloor(floorId) {
+      for (const building of DB.buildings) {
+        const floor = building.floors.find(byId(floorId));
+        if (floor) return { building, floor }; // מחזיר את הקומה ואת המבנה האב שלה
+      }
+      return null;
+    }
+    
+    function findRoom(roomId) {
+      for (const building of DB.buildings) {
+        for (const floor of building.floors) {
+          const room = floor.rooms.find(byId(roomId));
+          if (room) return { building, floor, room }; // מחזיר חדר, קומה ומבנה
+        }
+      }
+      return null;
+    }
+    
+    function findBed(bedId) {
+      for (const building of DB.buildings) {
+        for (const floor of building.floors) {
+          for (const room of floor.rooms) {
+            const bed = room.beds.find(byId(bedId));
+            if (bed) return { building, floor, room, bed }; // מחזיר מיטה, חדר, קומה ומבנה
+          }
+        }
+      }
+      return null;
+    }
+    
+    function findStudent(studentId) { return DB.students.find(byId(studentId)); }
+
+    // --------------------------------------------------
+    //   חלק 4.2: פונקציות שאילתה (Getters)
+    // --------------------------------------------------
+
+    /**
+     * בודק אם פריט (מבנה, קומה, חדר) מאוכלס, כלומר מכיל שיבוץ.
+     * @param {object} item - הפריט לבדיקה (מבנה, קומה או חדר)
+     * @returns {boolean} - true אם מאוכלס
+     */
+    function isOccupied(item) {
+      if (item.type === 'b') return item.floors.some(isOccupied); // מבנה מאוכלס אם אחת הקומות מאוכלסת
+      if (item.type === 'f') return item.rooms.some(isOccupied); // קומה מאוכלסת אם אחד החדרים מאוכלס
+      if (item.type === 'r') return item.beds.some(b => b.student_id !== null); // חדר מאוכלס אם אחת המיטות תפוסה
+      return false;
+    }
+
+    /**
+     * מוצא את המיטה המשויכת לבחור מסוים.
+     * @param {string} studentId - מזהה הבחור
+     * @returns {object | null} - אובייקט המיקום (כולל מיטה, חדר וכו') או null
+     */
+    function getStudentBed(studentId) {
+      for (const building of DB.buildings) {
+          for (const floor of building.floors) {
+              for (const room of floor.rooms) {
+                  const bed = room.beds.find(b => b.student_id === studentId);
+                  if (bed) {
+                      return { building, floor, room, bed };
+                  }
+              }
+          }
+      }
+      return null;
+    }
+
+    /**
+     * מחזיר רשימה של כל הבחורים שאינם משובצים כרגע באף מיטה.
+     * @returns {Array<object>} - מערך של אובייקטי בחורים
+     */
+    function getUnassignedStudents() {
+        const assigned = new Set(); // שימוש ב-Set לביצועים מהירים
+        // סרוק את כל המיטות ואסוף מזהי בחורים משובצים
+        for (const b of DB.buildings) {
+            for (const f of b.floors) {
+                for (const r of f.rooms) { 
+                    for (const bed of r.beds) {
+                        if (bed.student_id) assigned.add(bed.student_id);
+                    }
+                }
+            }
+        }
+        // סנן את רשימת הבחורים הכללית
+        return DB.students.filter(s => !assigned.has(s.id));
+    }
+
+    // --------------------------------------------------
+    //   חלק 4.3: פונקציות הוספה (Create)
+    // --------------------------------------------------
+
+    function addBuilding(name) {
+      name = name.trim();
+      if (!name) return [false, 'שם המבנה לא יכול להיות ריק'];
+      if (DB.buildings.some(b => b.name === name)) return [false, `מבנה בשם זה כבר קיים`];
+      
+      DB.buildings.push({ id: DB.seq.building++, name, floors: [], type:'b' });
+      saveDB();
+      return [true];
+    }
+    
+    function addFloor(buildingId, floor_number, displayName) {
+      const b = findBuilding(buildingId);
+      if (!b) return [false, 'מבנה לא נמצא'];
+      
+      const fn = Number(floor_number);
+      if (!Number.isFinite(fn)) return [false, `מספר המיון "${floor_number}" אינו תקין (חייב להיות מספר)`];
+      if (b.floors.some(f => f.floor_number === fn)) return [false, `קומה עם מספר מיון ${fn} כבר קיימת במבנה`];
+      
+      b.floors.push({ id: DB.seq.floor++, floor_number: fn, displayName: displayName.trim(), rooms: [], type:'f' });
+      b.floors.sort((a,b)=>a.floor_number-b.floor_number); // מיון הקומות לפי מספר
+      saveDB();
+      return [true];
+    }
+    
+    function addRoom(floorId, room_number) {
+      const {floor} = findFloor(floorId) || {};
+      if (!floor) return [false, 'קומה לא נמצאה'];
+      
+      room_number = String(room_number).trim();
+      if (!room_number) return [false, 'מספר/שם חדר ריק'];
+      if (floor.rooms.some(r => r.room_number === room_number)) return [false, `חדר בשם/מספר "${room_number}" כבר קיים בקומה`];
+      
+      floor.rooms.push({ id: DB.seq.room++, room_number, beds: [], type:'r' });
+      saveDB();
+      return [true];
+    }
+    
+    function addBed(roomId, bed_number) {
+      const {room} = findRoom(roomId) || {};
+      if (!room) return [false, 'חדר לא נמצא'];
+      
+      const bn = Number(bed_number);
+      if (!Number.isFinite(bn) || bn <= 0) return [false, `מספר מיטה "${bed_number}" אינו תקין (חייב להיות מספר שלם וחיובי)`];
+      if (room.beds.some(b => b.bed_number === bn)) return [false, `מיטה מספר ${bn} כבר קיימת בחדר`];
+      
+      // הוספה: אתחול מערך היסטוריה
+      room.beds.push({ id: DB.seq.bed++, bed_number: bn, student_id: null, type:'bed', history: [] });
+      room.beds.sort((a,b)=>a.bed_number-b.bed_number); // מיון המיטות בחדר
+      saveDB();
+      return [true];
+    }
+
+    /**
+     * שינוי: פונקציה להוספת בחור עם כל השדות החדשים
+     * מקבלת אובייקט נתונים
+     */
+    function addStudent(studentData, skipSave = false) {
+      // שלוף את המזהים הפוטנציאליים
+      const sId_card = String(studentData.id_card || '').trim();
+      const sPassport = String(studentData.passport || '').trim();
+      
+      // קבע את המזהה הראשי: ת.ז. מקבל עדיפות, אם אין, השתמש בדרכון
+      const primaryId = sId_card || sPassport;
+
+      // ולידציות
+      if (!primaryId) return [false, 'מספר זהות או מספר דרכון הוא שדה חובה'];
+      
+      const sLastName = String(studentData.lastName || '').trim();
+      const sFirstName = String(studentData.firstName || '').trim();
+      if (!sFirstName || !sLastName) return [false, 'שם פרטי ושם משפחה הם שדות חובה'];
+      
+      // בדוק כפילות מזהה ראשי
+      if (DB.students.some(s => s.id === primaryId)) return [false, `בחור עם מזהה "${primaryId}" כבר קיים`];
+      
+      // צור אובייקט בחור חדש
+      // המזהה הראשי (primaryId) נשמר בשדה 'id'
+      // שאר הנתונים נשמרים כפי שהם
+      const newStudent = {
+        ...studentData, // כולל id_card, passport, age, className וכו'
+        id: primaryId, // הוסף/דרוס את שדה ה-ID הראשי
+        type: 'student'
+      };
+
+      DB.students.push(newStudent);
+      // מיון רשימת הבחורים לפי א"ב
+      DB.students.sort((a,b)=>`${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`, 'he'));
+      
+      if (!skipSave) saveDB(); // skipSave משמש לייבוא CSV כדי לשמור פעם אחת בסוף
+      return [true];
+    }
+
+
+    // --------------------------------------------------
+    //   חלק 4.4: הוספה מרובה (Bulk Create)
+    // --------------------------------------------------
+
+    /**
+     * הוספה מרובה של חדרים לקומה, על בסיס קלט טווח.
+     * @param {number} floorId - מזהה הקומה
+     * @param {string} input - קלט הטווח (למשל: "101-105, 110")
+     * @returns {object} - אובייקט סיכום הפעולה
+     */
+    function addRoomsBulk(floorId, input) {
+        const numbers = parseRange(input, false); // השתמש ב-parseRange
+        const results = { total: numbers.length, added: 0, failed: [] };
+        for (const num of numbers) {
+            const [ok, msg] = addRoom(floorId, num); // נסה להוסיף כל חדר
+            if (ok) results.added++; else results.failed.push(msg.split('במספר')[0] + num);
+        }
+        if (results.total > 0) saveDB(); // שמור פעם אחת בסוף
+        return results;
+    }
+
+    /**
+     * הוספה מרובה של מיטות לחדר, על בסיס קלט טווח.
+     * @param {number} roomId - מזהה החדר
+     * @param {string} input - קלט הטווח (למשל: "1-4, 6")
+     * @returns {object} - אובייקט סיכום הפעולה
+     */
+    function addBedsBulk(roomId, input) {
+        const numbers = parseRange(input, true); // השתמש ב-parseRange
+        const results = { total: numbers.length, added: 0, failed: [] };
+        for (const num of numbers) {
+            const [ok, msg] = addBed(roomId, num); // נסה להוסיף כל מיטה
+            if (ok) results.added++; else results.failed.push(msg.split('במספר')[0] + num);
+        }
+        if (results.total > 0) {
+            findRoom(roomId).room.beds.sort((a,b)=>a.bed_number-b.bed_number); // מיין מחדש
+            saveDB(); // שמור פעם אחת בסוף
+        }
+        return results;
+    }
+
+    // --------------------------------------------------
+    //   חלק 4.5: פונקציות עדכון (Update)
+    // --------------------------------------------------
+
+    function updateBuilding(id, newName) {
+      const b = findBuilding(id);
+      if (!b) return [false, 'מבנה לא נמצא'];
+      newName = newName.trim();
+      if (!newName) return [false, 'שם המבנה לא יכול להיות ריק'];
+      // בדוק כפילות שם
+      if (DB.buildings.some(x => x.id !== id && x.name === newName)) return [false, 'מבנה בשם זה כבר קיים'];
+      
+      b.name = newName;
+      saveDB();
+      return [true];
+    }
+    
+    function updateFloor(id, newNum, newDisplayName) {
+      const found = findFloor(id);
+      if (!found) return [false, 'קומה לא נמצאה'];
+      
+      const fn = Number(newNum);
+      if (!Number.isFinite(fn)) return [false, 'מספר מיון אינו תקין'];
+      // בדוק כפילות מספר מיון
+      if (found.building.floors.some(x => x.id !== id && x.floor_number === fn)) return [false, 'קומה עם מספר מיון זה כבר קיימת במבנה'];
+      
+      found.floor.floor_number = fn;
+      found.floor.displayName = newDisplayName.trim();
+      found.building.floors.sort((a,b)=>a.floor_number-b.floor_number); // מיין מחדש את הקומות במבנה
+      saveDB();
+      return [true];
+    }
+    
+    function updateRoom(id, newNum) {
+      const found = findRoom(id);
+      if (!found) return [false, 'חדר לא נמצא'];
+      
+      newNum = String(newNum).trim();
+      if (!newNum) return [false, 'מספר/שם חדר ריק'];
+      // בדוק כפילות מספר חדר בקומה
+      if (found.floor.rooms.some(x => x.id !== id && x.room_number === newNum)) return [false, 'חדר בשם/מספר זה כבר קיים בקומה'];
+      
+      found.room.room_number = newNum;
+      saveDB();
+      return [true];
+    }
+    
+    /**
+     * שינוי: פונקציה לעדכון בחור עם כל השדות החדשים
+     * @param {string} id - המזהה הראשי (שאינו ניתן לשינוי)
+     * @param {object} studentData - אובייקט הנתונים החדשים מהטופס
+     */
+    function updateStudent(id, studentData) {
+      const s = findStudent(id); // מצא את הבחור לפי המזהה הראשי
+      if (!s) return [false, 'בחור לא נמצא'];
+      
+      const {
+        lastName, firstName, id_card, passport, age, className, groupName, street, houseNum, city, phone
+      } = studentData;
+      
+      const sLastName = String(lastName).trim();
+      const sFirstName = String(firstName).trim();
+
+      if (!sFirstName || !sLastName) return [false, 'שם פרטי ושם משפחה הם שדות חובה'];
+      
+      // הוספה: עדכן שם בהיסטוריה של המיטה הנוכחית
+      const currentBed = getStudentBed(id);
+      if(currentBed) {
+          if (!currentBed.bed.history) currentBed.bed.history = [];
+          const activeEntry = currentBed.bed.history.find(e => e.status === 'assigned' && e.studentId === id);
+          if (activeEntry) {
+              activeEntry.studentName = `${sFirstName} ${sLastName}`;
+          }
+      }
+
+      // עדכן את כל השדות באובייקט הקיים
+      // שים לב: שדה 'id' הראשי (s.id) אינו משתנה
+      s.lastName = sLastName;
+      s.firstName = sFirstName;
+      s.id_card = String(id_card || '').trim(); // עדכן את שדה הת.ז
+      s.passport = String(passport || '').trim(); // עדכן את שדה הדרכון
+      s.age = String(age || '').trim();
+      s.className = String(className || '').trim();
+      s.groupName = String(groupName || '').trim();
+      s.street = String(street || '').trim();
+      s.houseNum = String(houseNum || '').trim();
+      s.city = String(city || '').trim();
+      s.phone = String(phone || '').trim();
+      
+      // מיין מחדש את רשימת הבחורים (כי השם אולי השתנה)
+      DB.students.sort((a,b)=>`${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`, 'he'));
+      saveDB();
+      return [true];
+    }
+
+
+    // --------------------------------------------------
+    //   חלק 4.6: פונקציות מחיקה (Delete)
+    // --------------------------------------------------
+
+    function deleteBuilding(buildingId) {
+      const b = findBuilding(buildingId);
+      if (!b) return;
+      // מניעת מחיקה אם המבנה מאוכלס
+      if (isOccupied(b)) return [false, 'לא ניתן למחוק מבנה מאוכלס. פנה את כל המיטות תחילה.'];
+      
+      DB.buildings = DB.buildings.filter(b => b.id !== buildingId);
+      saveDB();
+      return [true];
+    }
+    
+    function deleteFloor(floorId) {
+      const found = findFloor(floorId);
+      if (!found) return;
+      // מניעת מחיקה אם הקומה מאוכלסת
+      if (isOccupied(found.floor)) return [false, 'לא ניתן למחוק קומה מאוכלסת. פנה את כל המיטות תחילה.'];
+      
+      found.building.floors = found.building.floors.filter(f => f.id !== floorId);
+      saveDB();
+      return [true];
+    }
+    
+    function deleteRoom(roomId) {
+      const found = findRoom(roomId);
+      if (!found) return;
+      // מניעת מחיקה אם החדר מאוכלס
+      if (isOccupied(found.room)) return [false, 'לא ניתן למחוק חדר מאוכלס. פנה את כל המיטות תחילה.'];
+      
+      found.floor.rooms = found.floor.rooms.filter(r => r.id !== roomId);
+      saveDB();
+      return [true];
+    }
+    
+    function deleteBed(bedId) {
+      const found = findBed(bedId); if (!found) return;
+      
+      // הוספה: מניעת מחיקת מיטה תפוסה
+      if (found.bed.student_id) {
+          return [false, 'לא ניתן למחוק מיטה מאוכלסת. בטל את השיבוץ תחילה.'];
+      }
+      
+      found.room.beds = found.room.beds.filter(b => b.id !== bedId);
+      saveDB(); return [true];
+    }
+    
+    function deleteStudent(id) {
+      // הוספה: עדכון היסטוריה לפני מחיקה
+      const oldBedLocation = getStudentBed(id);
+      if (oldBedLocation) {
+          // קרא לפונקציה הפנימית ללא שמירה
+          _internalUnassignBed(oldBedLocation.bed, 'student_deleted');
+      }
+
+      // הסר את הבחור מרשימת הבחורים
+      DB.students = DB.students.filter(s => s.id !== id);
+      saveDB(); // שמור פעם אחת בסוף
+    }
+
+    // --------------------------------------------------
+    //   חלק 4.7: לוגיקת שיבוצים (כולל היסטוריה)
+    // --------------------------------------------------
+
+    /**
+     * הוספה: פונקציה פנימית לטיפול בסגירת רשומת היסטוריה.
+     * @param {object} bed - אובייקט המיטה המלא
+     * @param {string} reason - 'unassigned', 'moved', 'student_deleted'
+     * @param {number | null} movedToBedId - מזהה המיטה החדשה (אם רלוונטי)
+     */
+    function _internalUnassignBed(bed, reason = 'unassigned', movedToBedId = null) {
+        if (!bed || !bed.student_id) return; // אין מה לבטל
+
+        // אתחול היסטוריה (לצורך מיגרציה מגרסה קודמת)
+        if (!bed.history) bed.history = [];
+
+        // מצא את הרשומה הפעילה
+        const activeEntry = bed.history.find(e => e.status === 'assigned' && e.studentId === bed.student_id);
+        
+        if (activeEntry) {
+            activeEntry.status = reason; // 'unassigned', 'moved', 'student_deleted'
+            activeEntry.dateUnassigned = new Date().toISOString();
+            activeEntry.movedToBedId = movedToBedId;
+        }
+
+        bed.student_id = null; // פנה את המיטה
+    }
+
+    /**
+     * שינוי: משבץ בחור למיטה, ומטפל בהיסטוריה ובמעבר.
+     * @param {number} bedId - מזהה המיטה
+     * @param {string} studentId - מזהה הבחור
+     */
+    function assignStudentToBed(bedId, studentId) { 
+        const newBedResult = findBed(bedId); 
+        if (!newBedResult) return; 
+        
+        // בדוק אם המיטה החדשה תפוסה
+        if (newBedResult.bed.student_id !== null) {
+            errorDialog('לא ניתן לשבץ בחור למיטה שכבר תפוסה. יש לפנות אותה תחילה.');
+            return;
+        }
+        
+        const student = findStudent(studentId);
+        if (!student) return; // ודא שהבחור קיים
+
+        // --- לוגיקת "מעבר" ---
+        const oldBedLocation = getStudentBed(studentId);
+        if (oldBedLocation) {
+            // בצע ביטול שיבוץ פנימי במיטה הישנה, עם סיבת "מעבר"
+            _internalUnassignBed(oldBedLocation.bed, 'moved', bedId);
+        }
+        // --- סוף לוגיקת "מעבר" ---
+
+        // אתחול היסטוריה במיטה החדשה (לצורך מיגרציה)
+        if (!newBedResult.bed.history) newBedResult.bed.history = [];
+
+        // יצירת רשומת היסטוריה חדשה במיטה החדשה
+        newBedResult.bed.history.push({
+            studentId: studentId,
+            studentName: `${student.firstName} ${student.lastName}`, // שמור שם לטובת היסטוריה
+            dateAssigned: new Date().toISOString(),
+            dateUnassigned: null,
+            status: 'assigned',
+            movedFromBedId: oldBedLocation ? oldBedLocation.bed.id : null // שמור מאיפה הגיע
+        });
+
+        // בצע את השיבוץ
+        newBedResult.bed.student_id = studentId;
+        saveDB(); // שמור את כל השינויים (גם במיטה הישנה וגם בחדשה)
+    }
+
+    /**
+     * שינוי: פונקציה ציבורית לביטול שיבוץ (למשל, לחיצת כפתור).
+     * @param {number} bedId - מזהה המיטה
+     */
+    function unassignBed(bedId) {
+      const f = findBed(bedId);
+      if (!f) return;
+      
+      _internalUnassignBed(f.bed, 'unassigned'); // קרא לפונקציה הפנימית
+      
+      saveDB(); // שמור את השינוי
+    }
+
+
+    // ==================================================
+    //            פרק 5: ייבוא וייצוא (JSON)
+    // ==================================================
+    
+    /**
+     * יוזם הורדת קובץ JSON לדפדפן.
+     * @param {object} data - הנתונים להורדה
+     * @param {string} filename - שם הקובץ הרצוי
+     */
+    function downloadJSON(data, filename) {
+        const dataStr = JSON.stringify(data, null, 2); // 'null, 2' ל-JSON "יפה"
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click(); // לחיצה וירטואלית להורדה
+        URL.revokeObjectURL(url); // שחרור הזיכרון
+    }
+
+    /**
+     * מציג מודאל לבחירת סוג הגיבוי (ייצוא JSON).
+     */
+    function promptExportType() {
+        const modalHtml = `
+            <div class="row">
+                <p>בחר אילו נתונים לגבות לקובץ ה-JSON:</p>
+            </div>
+            <div style="display: grid; gap: 10px;">
+                <button class="btn secondary" id="export-option-full">גיבוי מלא (מבנים, בחורים ושיבוצים)</button>
+                <button class="btn secondary" id="export-option-structure">גיבוי מבנים בלבד (תבנית)</button>
+                <button class="btn secondary" id="export-option-students">גיבוי בחורים בלבד</button>
+            </div>
+        `;
+        showModal('בחר סוג גיבוי', modalHtml, null, 'ביטול');
+        
+        el('#modal-ok').style.display = 'none'; // הסתר כפתור "אישור" רגיל
+
+        // גיבוי מלא
+        el('#export-option-full').onclick = () => {
+            const dbCopy = JSON.parse(JSON.stringify(DB)); // עותק מלא
+            dbCopy.exportType = 'full';
+            downloadJSON(dbCopy, `Pnimia_Backup_Full_${new Date().toISOString().slice(0, 10)}.json`);
+            el('#modal-cancel').click(); // סגירת המודאל
+        };
+        
+        // גיבוי מבנה בלבד (תבנית)
+        el('#export-option-structure').onclick = () => {
+            const structureCopy = JSON.parse(JSON.stringify(DB));
+            structureCopy.students = []; // רוקן בחורים
+            // אפס שיבוצים והיסטוריה
+            for (const b of structureCopy.buildings) {
+                for (const f of b.floors) {
+                    for (const r of f.rooms) {
+                        for (const bed of r.beds) {
+                            bed.student_id = null;
+                            bed.history = []; // הוספה: אפס היסטוריה בגיבוי תבנית
+                        }
+                    }
+                }
+            }
+            structureCopy.exportType = 'structure_only';
+            downloadJSON(structureCopy, `Pnimia_Backup_Structure_${new Date().toISOString().slice(0, 10)}.json`);
+            el('#modal-cancel').click();
+        };
+        
+        // גיבוי בחורים בלבד
+        el('#export-option-students').onclick = () => {
+            const studentsOnly = {
+                students: DB.students,
+                seq: { student: DB.seq.student }, // שמור את הרצף של הבחורים
+                exportType: 'students_only'
+            };
+            downloadJSON(studentsOnly, `Pnimia_Backup_Students_${new Date().toISOString().slice(0, 10)}.json`);
+            el('#modal-cancel').click();
+        };
+    }
+
+    /**
+     * מטפל בטעינת קובץ גיבוי (ייבוא JSON).
+     * @param {File} file - הקובץ שנבחר ע"י המשתמש
+     */
+    async function importDB(file) {
+        const reader = new FileReader();
+        reader.onload = async function(event) {
+            try {
+                const importedData = JSON.parse(event.target.result);
+                const type = importedData.exportType || 'full'; // זיהוי סוג הגיבוי
+
+                // טיפול בגיבוי מלא
+                if (type === 'full' && importedData.buildings && importedData.students && importedData.seq) {
+                    if (await confirmDialog('האם אתה בטוח שברצונך לטעון גיבוי מלא? **פעולה זו תחליף את כל הנתונים הנוכחיים.**')) {
+                        DB = importedData; // החלפה מלאה של ה-DB
+                        selectedNode = null;
+                        selectedStudentId = null;
+                        saveDB(); // שמירה וריענון
+                        showModal('טעינה הושלמה', 'הנתונים נטענו בהצלחה מהקובץ.', null, 'סגור');
+                    }
+                } 
+                // טיפול בגיבוי מבנה
+                else if (type === 'structure_only' && importedData.buildings) {
+                    if (await confirmDialog('האם אתה בטוח שברצונך לטעון מבנה פנימייה? **פעולה זו תחליף את כל המבנים הקיימים ותאפס את כל השיבוצים.** רשימת הבחורים תישמר.')) {
+                        DB.buildings = importedData.buildings;
+                        // עדכון הרצפים הרלוונטיים
+                        DB.seq.building = importedData.seq.building;
+                        DB.seq.floor = importedData.seq.floor;
+                        DB.seq.room = importedData.seq.room;
+                        DB.seq.bed = importedData.seq.bed;
+                        selectedNode = null;
+                        selectedStudentId = null;
+                        saveDB();
+                        showModal('טעינת מבנה הושלמה', 'מבנה הפנימייה נטען בהצלחה. כל השיבוצים אופסו.', null, 'סגור');
+                    }
+                }
+                // טיפול בגיבוי בחורים
+                else if (type === 'students_only' && importedData.students) {
+                    if (await confirmDialog('האם אתה בטוח שברצונך לטעון רשימת בחורים? **פעולה זו תחליף את כל רשימת הבחורים הקיימת ותאפס את כל השיבוצים.** מבנה הפנימייה יישמר.')) {
+                        DB.students = importedData.students;
+                        DB.seq.student = importedData.seq.student;
+                        // איפוס כל השיבוצים הקיימים
+                        for (const b of DB.buildings) for (const f of b.floors) for (const r of f.rooms) {
+                           for (const bed of r.beds) {
+                               bed.student_id = null;
+                               bed.history = []; // הוספה: אפס היסטוריה
+                           }
+                        }
+                        selectedNode = null;
+                        selectedStudentId = null;
+                        saveDB();
+                        showModal('טעינת בחורים הושלמה', 'רשימת הבחורים נטען בהצלחה. כל השיבוצים אופסו.', null, 'סגור');
+                    }
+                } else {
+                    errorDialog('קובץ הגיבוי אינו תקין או שסוג הגיבוי אינו מזוהה.');
+                }
+            } catch (error) {
+                errorDialog(`אירעה שגיאה בקריאת קובץ ה-JSON: ${error.message}`);
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    // ==================================================
+    //            פרק 6: ייבוא וייצוא (CSV)
+    // ==================================================
+
+    /**
+     * *** תיקון: פונקציה זו עודכנה לייבא 10 עמודות ***
+     * מפענח טקסט CSV לרשימת אובייקטי בחורים לפי מבנה האקסל
+     * @param {string} csvText - תוכן קובץ ה-CSV
+     * @returns {Array<object>} - מערך בחורים
+     */
+    function parseCSV(csvText) {
+        const lines = csvText.trim().split('\n').filter(line => line.trim().length > 0);
+        if (lines.length === 0) return [];
+        
+        let dataLines = lines;
+        
+        // זיהוי אוטומטי של שורת כותרת (אם מכילה מילים כמו "שם" או "תעודה")
+        const firstLine = lines[0].toLowerCase();
+        if (firstLine.includes('שם') || firstLine.includes('תעודה') || firstLine.includes('משפחה')) {
+            dataLines = lines.slice(1); // דלג על הכותרת
+        }
+
+        const students = [];
+        dataLines.forEach((line) => {
+            const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, '')); // פצל בפסיק ונקה מרכאות
+            
+            // *** תיקון: ולידציה בסיסית: חייב להיות לפחות 10 עמודות (במקום 11)
+            if (values.length >= 10) {
+                const id_card = values[2] ? values[2].trim() : '';
+                const passport = values[3] ? values[3].trim() : '';
+                const firstName = values[1] ? values[1].trim() : '';
+                const lastName = values[0] ? values[0].trim() : '';
+
+                // דלג אם אין שם או אין מזהה (לא ת.ז ולא דרכון)
+                if ((!id_card && !passport) || !firstName || !lastName) {
+                    return; // דלג על שורה זו
+                }
+
+                students.push({
+                    lastName: lastName,
+                    firstName: firstName,
+                    id_card: id_card, // תעודת זהות (עמודה 3)
+                    passport: passport, // מס דרכון (עמודה 4)
+                    age: values[4] || '',
+                    className: values[5] || '', // כיתה_חדש
+                    groupName: '', // <-- עמודת "גל_שם" הוסרה
+                    street: values[6] || '', // רחוב (הוזז מ-7)
+                    houseNum: values[7] || '', // מס בית ודירה (הוזז מ-8)
+                    city: values[8] || '', // ישוב (הוזז מ-9)
+                    phone: values[9] || '' // נייד תלמיד (הוזז מ-10)
+                });
+            }
+        });
+        return students;
+    }
+
+
+    /**
+     * מבצע ייבוא של רשימת בחורים שפוענחה מ-CSV.
+     * @param {Array<object>} studentData - מערך הבחורים
+     * @returns {object} - אובייקט סיכום הפעולה
+     */
+    function importStudentsFromCSV(studentData) {
+        let importedCount = 0;
+        let skippedCount = 0;
+        let skippedList = [];
+
+        studentData.forEach(data => {
+            // שינוי: קריאה ל-addStudent עם אובייקט הנתונים
+            const [ok, msg] = addStudent(data, true); // skipSave=true
+            if (ok) {
+                importedCount++;
+            } else {
+                skippedCount++;
+                skippedList.push(`${msg} (${data.firstName} ${data.lastName})`);
+            }
+        });
+        
+        if (importedCount > 0) {
+            saveDB(); // שמור פעם אחת בסוף
+        } else {
+            refreshAll(); // רק רענן אם כלום לא נוסף
+        }
+        
+        return { importedCount, skippedCount, total: studentData.length, skippedList };
+    }
+
+    /**
+     * *** תיקון: פונקציה זו עודכנה לייצא 10 עמודות ***
+     * יוזם הורדת קובץ CSV של רשימת הבחורים הנוכחית במבנה החדש.
+     */
+    function exportStudentsToCSV() {
+      const BOM = "\uFEFF"; // תו מיוחד לקידוד עברית תקין באקסל
+      // *** תיקון: כותרת CSV חדשה (הוסרה עמודת גל_שם)
+      const header = "שם_משפחה,שם_פרטי,תעודת זהות,מס דרכון,גיל,כיתה_חדש,רחוב,מס בית ודירה,ישוב,נייד תלמיד,מיקום שיבוץ";
+      
+      const rows = DB.students.map(student => {
+          let locationText = 'לא משובץ';
+          const bedInfo = getStudentBed(student.id); // מצא מיקום
+          if (bedInfo) {
+              const floorName = bedInfo.floor.displayName || `קומה ${bedInfo.floor.floor_number}`;
+              locationText = `${bedInfo.building.name}, ${floorName}, חדר ${bedInfo.room.room_number}, מיטה ${bedInfo.bed.bed_number}`;
+          }
+          
+          // *** תיקון: סדר עמודות חדש (הוסרה עמודת גל_שם)
+          return [
+              student.lastName,
+              student.firstName,
+              student.id_card, // השדה המקורי של ת.ז
+              student.passport, // השדה המקורי של דרכון
+              student.age,
+              student.className,
+              // student.groupName, // <-- הוסר
+              student.street,
+              student.houseNum,
+              student.city,
+              student.phone,
+              locationText // הוספת מיקום שיבוץ בסוף
+          ].map(field => `"${String(field || '').replace(/"/g, '""')}"`).join(','); // עטוף במרכאות
+      });
+
+      const csvContent = [header, ...rows].join('\r\n');
+      const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Pnimia_Students_Export_${new Date().toISOString().slice(0, 10)}.csv`);
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    /**
+     * מטפל בטעינת קובץ CSV (מופעל מבחירת הקובץ).
+     */
+    function handleCSVFile(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            try {
+                const csvText = event.target.result;
+                const studentData = parseCSV(csvText); // פענוח הקובץ
+                
+                if (studentData.length === 0) {
+                    // *** תיקון: עדכון הודעת שגיאה ל-10 עמודות
+                    errorDialog('לא נמצאו נתונים תקינים לקריאה בקובץ ה-CSV. אנא ודא שהקובץ בפורמט התואם (10 עמודות: שם משפחה, שם פרטי, ת.ז...)');
+                    return;
+                }
+                
+                const results = importStudentsFromCSV(studentData); // ייבוא הנתונים
+                
+                // הצג סיכום למשתמש
+                let summaryHtml = `
+                    <p><strong>סה"כ רשומות תקינות לקריאה:</strong> ${results.total}</p>
+                    <p style="color:var(--success)">✅ <strong>נוספו בהצלחה:</strong> ${results.importedCount}</p>
+                    <p style="color:var(--warn)">⚠️ <strong>דלגו (כפילות/נתונים חסרים):</strong> ${results.skippedCount}</p>
+                `;
+
+                if (results.skippedList.length > 0) {
+                    summaryHtml += `<div class="row" style="max-height: 150px; overflow: auto; border: 1px solid var(--border); padding: 8px; border-radius: 8px; margin-top: 10px;">
+                        <label style="font-weight: 700;">פירוט הדלגות (מוגבל ל-50):</label>
+                        <ul style="margin: 0; padding-right: 20px; font-size: 0.9rem;">
+                            ${results.skippedList.slice(0, 50).map(s => `<li>${s}</li>`).join('')}
+                            ${results.skippedList.length > 50 ? '<li>...ועוד...</li>' : ''}
+                        </ul>
+                    </div>`;
+                }
+
+                showModal('סיכום ייבוא CSV', summaryHtml, null, 'סגור');
+                
+                e.target.value = ''; // אפס את בחירת הקובץ
+
+            } catch (error) {
+                errorDialog(`אירעה שגיאה בקריאת הקובץ: ${error.message}`);
+            }
+        };
+        reader.readAsText(file); // קרא כטקסט
+    }
+
+    // ==================================================
+    //            פרק 7: לוגיקת ממשק - לשוניות
+    // ==================================================
+    
+    // חיבור מאזינים לכפתורי הלשוניות
+    el('#tab-manage').addEventListener('click', ()=> switchTab('manage'));
+    el('#tab-students').addEventListener('click', ()=> switchTab('students'));
+    
+    /**
+     * מחליף בין הלשוניות "ניהול" ו"בחורים".
+     * @param {string} key - 'manage' או 'students'
+     */
+    function switchTab(key) {
+      const isManage = key === 'manage';
+      
+      // עדכון קלאס 'active' בכפתורים
+      el('#tab-manage').classList.toggle('active', isManage);
+      el('#tab-students').classList.toggle('active', !isManage);
+      
+      // הצג/הסתר את האזורים
+      el('#pane-manage').classList.toggle('hidden', !isManage);
+      el('#pane-students').classList.toggle('hidden', isManage);
+      
+      if (!isManage) selectedNode = null; // בטל בחירה בעץ ao עוברים למסך בחורים
+      
+      refreshAll(); // רענן תצוגה
+    }
+
+    // ==================================================
+    //       פרק 8: לוגיקת ממשק - רינדור עץ המבנים
+    // ==================================================
+    
+    let selectedNode = null; // משתנה גלובלי לשמירת הפריט הנבחר בעץ
+
+    /**
+     * יוצר אלמנט HTML לפריט עץ (מבנה, קומה, חדר).
+     * @param {string} label - הכותרת (שם)
+     * @param {string} typeLabel - תווית הסוג (למשל, "מבנה")
+     * @param {string} typeKey - מפתח הסוג (למשל, 'b')
+     * @param {number} id - מזהה הפריט
+     * @param {boolean} isSelected - האם הפריט נבחר
+     * @returns {HTMLElement} - אלמנט ה-DIV של הפריט
+     */
+    function createTreeItem(label, typeLabel, typeKey, id, hasChildren, isSelected) {
+        const wrap = document.createElement('div');
+        wrap.className = 'tree-item';
+        wrap.dataset.type = typeKey;
+        wrap.dataset.id = id;
+        if (isSelected) wrap.classList.add('selected');
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'tree-label';
+        nameSpan.textContent = label;
+
+        const chipType = document.createElement('span');
+        chipType.className = 'chip type';
+        chipType.textContent = typeLabel;
+
+        wrap.appendChild(nameSpan);
+        wrap.appendChild(chipType);
+        
+        return wrap;
+    }
+
+    /**
+     * יוצר את המעטפת של פריט עץ (עם הקו הימני).
+     * @param {string} type - סוג הפריט
+     * @param {number} id - מזהה הפריט
+     * @returns {HTMLElement}
+     */
+    function createNodeWrapper(type, id) {
+        const div = document.createElement('div');
+        div.className = 'tree-node-wrapper';
+        div.dataset.type = type;
+        div.dataset.id = id;
+        return div;
+    }
+
+    /**
+     * יוצר אלמנט HTML לתא מיטה.
+     * @param {object} bed - אובייקט המיטה
+     * @param {object | null} student - אובייקט הבחור (אם משובץ)
+     * @returns {HTMLElement}
+     */
+    function createBedCell(bed, student) {
+        const statusClass = student ? 'assigned' : 'unassigned'; // סטטוס (תפוס/פנוי)
+        const label = student ? `${student.firstName} ${student.lastName}` : 'פנוי';
+        
+        const cell = document.createElement('div');
+        cell.className = `bed-cell ${statusClass}`;
+        cell.dataset.id = bed.id;
+        cell.dataset.type = 'bed';
+        
+        cell.innerHTML = `
+            <span class="bed-number">${bed.bed_number}</span>
+            <span class="bed-student-name" title="${escapeHtml(label)}">${escapeHtml(label)}</span>
+        `;
+        
+        // הוספת מאזין לבחירת המיטה
+        cell.addEventListener('click', (e) => {
+            e.stopPropagation(); // מנע בחירה של החדר
+            selectNode('bed', bed.id, cell);
+        });
+        
+        return cell;
+    }
+
+    /**
+     * הפונקציה המרכזית שמרנדרת את כל עץ המבנים מחדש.
+     * מנקה את העץ הקיים ובונה אותו רקורסיבית.
+     */
+    function renderTree() {
+      const tree = el('#tree');
+      tree.innerHTML = ''; // נקה את העץ
+      
+      // פונקציה פנימית לבניית חדר (כולל המיטות שבו)
+      const buildRoom = (room, floor, parentEl) => {
+        const rWrap = createNodeWrapper('r', room.id);
+        const hasBeds = room.beds && room.beds.length > 0;
+        
+        // יצירת פריט החדר (הכותרת)
+        const rEl = createTreeItem(`חדר ${room.room_number}`, 'חדר', 'r', room.id, hasBeds, selectedNode && selectedNode.type === 'r' && selectedNode.id === room.id);
+        rEl.addEventListener('click', (e) => { e.stopPropagation(); selectNode('r', room.id, rEl); });
+        rWrap.appendChild(rEl);
+
+        const childrenContainer = document.createElement('div');
+        childrenContainer.className = 'tree-children'; // קונטיינר לילדים (מוזח)
+        
+        if (hasBeds) {
+            // יצירת קונטיינר המיטות
+            const bedsContainer = document.createElement('div');
+            bedsContainer.className = 'beds-container';
+            room.beds.sort((a,b)=>a.bed_number-b.bed_number).forEach(bed => {
+                const student = findStudent(bed.student_id); // מצא את הבחור המשובץ
+                const bedCell = createBedCell(bed, student);
+                // סמן אם המיטה הזו נבחרה
+                if (selectedNode && selectedNode.type === 'bed' && selectedNode.id === bed.id) {
+                    bedCell.classList.add('selected-bed');
+                }
+                bedsContainer.appendChild(bedCell);
+            });
+            childrenContainer.appendChild(bedsContainer);
+        } else {
+            // אם אין מיטות
+            const dummy = document.createElement('div');
+            dummy.className = 'muted';
+            dummy.textContent = 'אין מיטות להצגה';
+            dummy.style.padding = '5px 20px';
+            childrenContainer.appendChild(dummy);
+        }
+        rWrap.appendChild(childrenContainer);
+        parentEl.appendChild(rWrap);
+      }
+
+      // פונקציה פנימית לבניית קומה (כולל החדרים שבה)
+      const buildFloor = (floor, building, parentEl) => {
+        const fWrap = createNodeWrapper('f', floor.id);
+        const hasRooms = floor.rooms && floor.rooms.length > 0;
+        const displayName = floor.displayName || `קומה ${floor.floor_number}`;
+        
+        // יצירת פריט הקומה
+        const fEl = createTreeItem(displayName, 'קומה', 'f', floor.id, hasRooms, selectedNode && selectedNode.type === 'f' && selectedNode.id === floor.id);
+        fWrap.appendChild(fEl);
+        
+        fEl.addEventListener('click', (e) => { e.stopPropagation(); selectNode('f', floor.id, fEl); });
+        
+        const childrenContainer = document.createElement('div');
+        childrenContainer.className = 'tree-children';
+        if (hasRooms) {
+            floor.rooms.forEach(room => buildRoom(room, floor, childrenContainer)); // קריאה רקורסיבית לחדרים
+        } else {
+            // אם אין חדרים
+            const dummy = createTreeItem('אין חדרים להצגה', '', 'dummy', `dummy_r_${floor.id}`, false, false);
+            childrenContainer.appendChild(dummy);
+        }
+        fWrap.appendChild(childrenContainer);
+        parentEl.appendChild(fWrap);
+      }
+
+      // לולאה ראשית - עוברת על כל המבנים
+      for (const building of DB.buildings.sort((a,b)=>a.name.localeCompare(b.name,'he'))) {
+        const bWrap = createNodeWrapper('b', building.id);
+        const hasFloors = building.floors && building.floors.length > 0;
+        
+        // יצירת פריט המבנה
+        const bEl = createTreeItem(building.name, 'מבנה', 'b', building.id, hasFloors, selectedNode && selectedNode.type === 'b' && selectedNode.id === building.id);
+        bWrap.appendChild(bEl);
+        
+        bEl.addEventListener('click', (e) => { e.stopPropagation(); selectNode('b', building.id, bEl); });
+        
+        const childrenContainer = document.createElement('div');
+        childrenContainer.className = 'tree-children';
+        if (hasFloors) {
+            building.floors.sort((a,b)=>a.floor_number-b.floor_number).forEach(floor => buildFloor(floor, building, childrenContainer)); // קריאה רקורסיבית לקומות
+        } else {
+            // אם אין קומות
+            const dummy = createTreeItem('אין קומות להצגה', '', 'dummy', `dummy_f_${building.id}`, false, false);
+            childrenContainer.appendChild(dummy);
+        }
+        // *** תיקון: שגיאת fWrap תוקנה כאן ***
+        bWrap.appendChild(childrenContainer); // <-- במקום fWrap.appendChild
+        tree.appendChild(bWrap);
+      }
+      
+      // ודא שהבחירה הנוכחית (selectedNode) מסומנת ויזואלית
+      els('.tree-item').forEach(n => n.classList.remove('selected'));
+      if (selectedNode && selectedNode.type !== 'bed') {
+          const sel = els(`.tree-item[data-type="${selectedNode.type}"][data-id="${selectedNode.id}"]`).find(x=>x) || null;
+          if (sel) sel.classList.add('selected'); else selectedNode = null; // אפס אם לא נמצא
+      }
+      
+      els('.bed-cell').forEach(n => n.classList.remove('selected-bed'));
+      if (selectedNode && selectedNode.type === 'bed') {
+          const selBed = els(`.bed-cell[data-id="${selectedNode.id}"]`).find(x=>x) || null;
+          if (selBed) selBed.classList.add('selected-bed'); else selectedNode = null; // אפס אם לא נמצא
+      }
+
+      // עדכון חלקים אחרים בממשק התלויים בעץ
+      updateStats();
+      updateActionsPanel();
+    }
+
+    /**
+     * מגדיר פריט (או מיטה) כ"נבחר" ומעדכן את הממשק.
+     * @param {string} type - סוג הפריט (b, f, r, bed)
+     * @param {number} id - מזהה הפריט
+     * @param {HTMLElement} elem - האלמנט שנלחץ
+     */
+    function selectNode(type, id, elem) {
+      // נקה בחירות קודמות
+      els('.tree-item').forEach(n => n.classList.remove('selected'));
+      els('.bed-cell').forEach(n => n.classList.remove('selected-bed'));
+      
+      // הגדר בחירה חדשה
+      selectedNode = { type, id: Number(id) };
+
+      if (type !== 'bed') {
+          elem.classList.add('selected'); // סמן פריט עץ
+      } else {
+          elem.classList.add('selected-bed'); // סמן תא מיטה
+          // סמן גם את החדר האב של המיטה
+          const parentRoom = elem.closest('.tree-node-wrapper[data-type="r"]');
+          if (parentRoom) {
+              const roomItem = parentRoom.querySelector('.tree-item');
+              if(roomItem) roomItem.classList.add('selected');
+          }
+      }
+      
+      updateActionsPanel(); // עדכן את פאנל הפעולות
+    }
+    
+    // ==================================================
+    //       פרק 9: לוגיקת ממשק - פאנל פעולות (צד שמאל)
+    // ==================================================
+    
+    /**
+     * הוספה: מרנדר את רשימת היסטוריית השיבוצים עבור מיטה.
+     * @param {object} bed - אובייקט המיטה
+     * @param {HTMLElement} container - האלמנט להכניס לתוכו את הרשימה
+     */
+    function renderBedHistory(bed, container) {
+        container.innerHTML = '<h4>היסטוריית שיבוצים</h4>';
+        
+        // אתחול למקרה שאין היסטוריה (מיגרציה)
+        if (!bed.history || bed.history.length === 0) {
+            container.innerHTML += '<p class="muted">אין היסטוריית שיבוצים למיטה זו.</p>';
+            return;
+        }
+
+        const list = document.createElement('ul');
+        
+        // הצג מהאחרון לראשון
+        bed.history.slice().reverse().forEach(entry => {
+            const li = document.createElement('li');
+            li.innerHTML = `<strong>${escapeHtml(entry.studentName)}</strong> <span class="muted">(${entry.studentId})</span>`;
+            
+            let dateText = `משובץ: ${formatDate(entry.dateAssigned)}`;
+            
+            if (entry.status === 'assigned') {
+                dateText += ' - <span style="color:var(--success)">עדיין כאן</span>';
+            } else {
+                let action = 'עזב';
+                let actionClass = '';
+                
+                if (entry.status === 'student_deleted') {
+                    action = 'נמחק';
+                    actionClass = 'status-deleted';
+                }
+                if (entry.status === 'moved' && entry.movedToBedId) {
+                    const loc = findBed(entry.movedToBedId);
+                    action = loc 
+                        ? `עבר לחדר ${loc.room.room_number}, מיטה ${loc.bed.bed_number}` 
+                        : 'עבר למיטה אחרת';
+                    actionClass = 'status-moved';
+                }
+                
+                dateText += ` | <span class="${actionClass}">${action}: ${formatDate(entry.dateUnassigned)}</span>`;
+            }
+            
+            li.innerHTML += `<small>${dateText}</small>`;
+            list.appendChild(li);
+        });
+
+        container.appendChild(list);
+    }
+
+
+    /**
+     * מעדכן את פאנל הפעולות (צד שמאל) בהתאם לפריט שנבחר בעץ (selectedNode).
+     */
+    function updateActionsPanel() {
+      const title = el('#actions-title');
+      const details = el('#actions-details');
+      const btns = el('#actions-buttons');
+      const btnDelete = el('#btn-delete');
+      
+      // הוספה: נקה את פאנל ההיסטוריה
+      const historyContainer = el('#bed-history');
+      historyContainer.innerHTML = '';
+      historyContainer.classList.add('hidden');
+
+
+      btns.innerHTML = ''; // נקה כפתורים קודמים
+      btnDelete.disabled = true; // כברירת מחדל, כפתור המחיקה מנוטרל
+
+      // אם שום דבר לא נבחר
+      if (!selectedNode || selectedNode.type === 'dummy') {
+        title.textContent = 'בחר פריט מהעץ';
+        details.textContent = '—';
+        return;
+      }
+
+      const { type, id } = selectedNode;
+      btnDelete.disabled = false; // אפשר מחיקה
+
+      // ---- הצג כותרת, פרטים וכפתורים לפי סוג הפריט ----
+      
+      if (type === 'b') { // נבחר מבנה
+        const b = findBuilding(id);
+        title.textContent = `נבחר: ${b.name}`;
+        details.textContent = `סוג: מבנה`;
+        btns.appendChild(primaryBtn('הוסף קומה', ()=> promptAddFloor(b.id)));
+        btns.appendChild(btn('ערוך שם מבנה', 'warn', ()=> promptEditBuilding(b.id, b.name)));
+      } 
+      
+      else if (type === 'f') { // נבחרה קומה
+        const { building, floor } = findFloor(id);
+        const displayName = floor.displayName || `קומה ${floor.floor_number}`;
+        title.textContent = `נבחר: ${displayName}`;
+        details.textContent = `סוג: קומה (${building.name})`;
+        btns.appendChild(primaryBtn('הוסף חדר בודד', ()=> promptAddRoom(floor.id)));
+        btns.appendChild(secondaryBtn('הוסף מס\' חדרים (Bulk)', ()=> promptBulkCreate('חדרים', floor.id, 'חדר', 'מספרי חדרים (לדוגמה: 101, 105, 201-204)', addRoomsBulk, 'text')));
+        btns.appendChild(btn('ערוך קומה', 'warn', ()=> promptEditFloor(floor.id, floor.floor_number, floor.displayName)));
+      } 
+      
+      else if (type === 'r') { // נבחר חדר
+        const { building, floor, room } = findRoom(id);
+        const floorName = floor.displayName || `קומה ${floor.floor_number}`;
+        title.textContent = `נבחר: חדר ${room.room_number}`;
+        details.textContent = `סוג: חדר (${floorName})`;
+        btns.appendChild(primaryBtn('הוסף מיטה בודדת', ()=> promptAddBed(room.id)));
+        btns.appendChild(secondaryBtn('הוסף מס\' מיטות (Bulk)', ()=> promptBulkCreate('מיטות', room.id, 'מיטה', 'מספרי מיטות (לדוגמה: 1-4, 6, 8)', addBedsBulk)));
+        btns.appendChild(btn('ערוך מספר/שם חדר', 'warn', ()=> promptEditRoom(room.id, room.room_number)));
+      } 
+      
+      else if (type === 'bed') { // נבחרה מיטה
+        const { building, floor, room, bed } = findBed(id);
+        const student = findStudent(bed.student_id);
+        const floorName = floor.displayName || `קומה ${floor.floor_number}`;
+        title.textContent = `נבחר: מיטה ${bed.bed_number}`;
+        details.innerHTML = `סוג: מיטה<br>מיקום: ${building.name}, ${floorName}, חדר ${room.room_number}, מיטה ${bed.bed_number}`;
+        
+        if (student) { // אם המיטה תפוסה
+          details.innerHTML += `<br>משובץ: ${escapeHtml(student.firstName)} ${escapeHtml(student.lastName)}`;
+          // שינוי: כפתור ביטול שיבוץ קורא ל-unassignBed
+          btns.appendChild(primaryBtn('בטל שיבוץ', ()=> { unassignBed(bed.id); }));
+          btns.appendChild(btn('צפה/ערוך פרטי בחור', 'ghost', ()=> { switchTab('students'); selectStudent(student.id); }));
+        }
+        else { // אם המיטה פנויה
+          btns.appendChild(primaryBtn('שבץ בחור', ()=> promptAssign(bed.id)));
+        }
+        btnDelete.disabled = false;
+
+        // הוספה: הצג את היסטוריית המיטה
+        historyContainer.classList.remove('hidden');
+        renderBedHistory(bed, historyContainer);
+      }
+    }
+    
+    // פונקציות עזר ליצירת כפתורים
+    function btn(label, cls, onClick) { const b = document.createElement('button'); b.className = `btn ${cls||''}`; b.textContent = label; b.onclick = onClick; return b; }
+    function primaryBtn(label, onClick) { return btn(label, 'primary', onClick); }
+    function secondaryBtn(label, onClick) { return btn(label, 'secondary', onClick); }
+
+    // --------------------------------------------------
+    //   מאזינים לכפתורים הראשיים בפאנל הפעולות
+    // --------------------------------------------------
+
+    // כפתור מחיקה
+    el('#btn-delete').addEventListener('click', async ()=>{
+      if (!selectedNode) return;
+      const { type, id } = selectedNode;
+      const confirmMsg = 'האם אתה בטוח שברצונך למחוק את הפריט הנבחר? פעולה זו הינה בלתי הפיכה.';
+      if (!(await confirmDialog(confirmMsg))) return; // בקש אישור
+
+      let result = [true];
+      // קרא לפונקציית המחיקה המתאימה
+      if (type==='b') result = deleteBuilding(id);
+      else if (type==='f') result = deleteFloor(id);
+      else if (type==='r') result = deleteRoom(id);
+      else if (type==='bed') result = deleteBed(id); // הפונקציה עודכנה לבדוק תפוסה
+
+      if (result[0] === false) errorDialog(result[1]); // אם נכשל (למשל, מנסה למחוק פריט מאוכלס)
+      else selectedNode = null; // אפס בחירה לאחר מחיקה
+    });
+    
+    // כפתורי גיבוי, שחזור ואיפוס (בכותרת העץ)
+    el('#btn-reset-data').addEventListener('click', promptResetOptions);
+    el('#btn-export-db').addEventListener('click', promptExportType);
+    el('#btn-import-db').addEventListener('click', () => {
+        el('#json-file-input').click(); // פתח את בורר הקבצים
+    });
+    el('#btn-export-students-csv').addEventListener('click', exportStudentsToCSV);
+
+    // מאזין לטעינת קובץ JSON
+    el('#json-file-input').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            importDB(file);
+        }
+        e.target.value = ''; // אפס את הבורר
+    });
+
+    // מאזינים לייבוא CSV
+    el('#btn-import-students').addEventListener('click', () => {
+        el('#csv-file-input').click();
+    });
+    el('#csv-file-input').addEventListener('change', handleCSVFile);
+
+    // כפתור הוספת מבנה חדש (הראשי)
+    el('#btn-add-building').addEventListener('click', promptAddFullBuilding);
+
+    // ==================================================
+    //       פרק 10: לוגיקת ממשק - חלונות קופצים (Prompts)
+    // ==================================================
+
+    /**
+     * פונקציית הגיון ליצירת מבנה מלא (אוטומטי).
+     */
+    function addFullBuilding(name, numFloors, numRoomsPerFloor, numBedsPerRoom) {
+        name = name.trim();
+        if (!name) return [false, 'שם המבנה לא יכול להיות ריק.'];
+        if (DB.buildings.some(b => b.name === name)) return [false, `מבנה בשם "${name}" כבר קיים.`];
+
+        // ולידציה של מספרים
+        const floors = Number(numFloors);
+        const rooms = Number(numRoomsPerFloor);
+        const beds = Number(numBedsPerRoom);
+        if (!Number.isInteger(floors) || floors <= 0) return [false, 'מספר הקומות חייב להיות מספר שלם וחיובי.'];
+        if (!Number.isInteger(rooms) || rooms <= 0) return [false, 'מספר החדרים בכל קומה חייב להיות מספר שלם וחיובי.'];
+        if (!Number.isInteger(beds) || beds <= 0) return [false, 'מספר המיטות בכל חדר חייב להיות מספר שלם וחיובי.'];
+
+        // יצירת האובייקט
+        const newBuilding = { id: DB.seq.building++, name, floors: [], type: 'b' };
+
+        for (let i = 1; i <= floors; i++) {
+            const newFloor = { id: DB.seq.floor++, floor_number: i, displayName: ``, rooms: [], type: 'f' };
+            for (let j = 1; j <= rooms; j++) {
+                const roomNumber = `${i}${String(j).padStart(2, '0')}`; // מספור חדרים (למשל 101, 102)
+                const newRoom = { id: DB.seq.room++, room_number: roomNumber, beds: [], type: 'r' };
+                for (let k = 1; k <= beds; k++) {
+                    // הוספה: אתחול היסטוריה
+                    newRoom.beds.push({ id: DB.seq.bed++, bed_number: k, student_id: null, type: 'bed', history: [] });
+                }
+                newFloor.rooms.push(newRoom);
+            }
+            newBuilding.floors.push(newFloor);
+        }
+
+        DB.buildings.push(newBuilding);
+        saveDB();
+        return [true, `המבנה "${name}" נוצר בהצלחה עם ${floors} קומות, ${rooms} חדרים בכל קומה ו-${beds} מיטות בכל חדר.`];
+    }
+
+    /**
+     * מציג מודאל "הוספת מבנה חדש (אוטומטי)".
+     */
+    function promptAddFullBuilding() {
+        const modalHtml = `
+            <div class="row"><label>שם המבנה (חובה):</label><input id="in-b-name" /></div>
+            <div class="row-grid">
+                <div class="row"><label>מספר קומות:</label><input id="in-b-floors" type="number" min="1" value="1" /></div>
+                <div class="row"><label>מספר חדרים בכל קומה:</label><input id="in-b-rooms" type="number" min="1" value="4" /></div>
+            </div>
+            <div class="row"><label>מספר מיטות בכל חדר:</label><input id="in-b-beds" type="number" min="1" value="2" /></div>
+        `;
+        showModal('הוספת מבנה חדש (אוטומטי)', modalHtml, () => {
+            const name = el('#in-b-name').value;
+            const floors = el('#in-b-floors').value;
+            const rooms = el('#in-b-rooms').value;
+            const beds = el('#in-b-beds').value;
+
+            const [ok, msg] = addFullBuilding(name, floors, rooms, beds);
+            if (ok) {
+                showModal('הצלחה', msg, null, 'סגור'); // הצג הודעת הצלחה
+            } else {
+                errorDialog(msg); // הצג הודעת שגיאה
+            }
+        });
+        el('#in-b-name').focus();
+    }
+
+    /**
+     * מציג מודאל לבחירת סוג איפוס נתונים.
+     */
+    function promptResetOptions() {
+        const modalHtml = `
+            <p><strong><i class="fas fa-exclamation-triangle"></i> אזהרה:</strong> פעולה זו הינה בלתי הפיכה. בחר את סוג האיפוס הרצוי:</p>
+            <div style="display: grid; gap: 10px; margin-top: 15px;">
+                <button class="btn danger" id="reset-option-structures">איפוס מבנים בלבד (קומות, חדרים, מיטות)</button>
+                <button class="btn danger" id="reset-option-students">איפוס בחורים בלבד (ושיבוצים)</button>
+                <button class="btn danger" id="reset-option-all">איפוס כללי (מחיקת הכל)</button>
+            </div>
+        `;
+        showModal('איפוס נתונים', modalHtml, null, 'ביטול');
+        
+        el('#modal-ok').style.display = 'none'; // הסתר כפתור אישור
+
+        // איפוס מבנים בלבד
+        el('#reset-option-structures').onclick = async () => {
+            if (await confirmDialog('האם אתה בטוח שברצונך לאפס את כל המבנים? כל הקומות, החדרים והמיטות יימחקו, וכל השיבוצים יבוטלו. רשימת הבחורים תישמר.')) {
+                DB.buildings = [];
+                DB.seq.building = 1; DB.seq.floor = 1; DB.seq.room = 1; DB.seq.bed = 1;
+                saveDB();
+                el('#modal-cancel').click();
+            }
+        };
+        // איפוס בחורים בלבד
+        el('#reset-option-students').onclick = async () => {
+            if (await confirmDialog('האם אתה בטוח שברצונך לאפס את כל הבחורים? כל רשימת הבחורים תימחק וכל השיבוצים יבוטלו. מבנה הפנימייה יישמר.')) {
+                DB.students = [];
+                // אפס שיבוצים קיימים
+                for (const b of DB.buildings) for (const f of b.floors) for (const r of f.rooms) {
+                    for (const bed of r.beds) {
+                        bed.student_id = null;
+                        bed.history = []; // הוספה: אפס היסטוריה
+                    }
+                }
+                saveDB();
+                el('#modal-cancel').click();
+            }
+        };
+        // איפוס כללי
+        el('#reset-option-all').onclick = async () => {
+            if (await confirmDialog('האם אתה בטוח שברצונך לאפס את כל נתוני המערכת? **כל המבנים וכל הבחורים יימחקו לצמיתות!**')) {
+                DB = { seq: {building:1, floor:1, room:1, bed:1, student:1}, buildings: [], students: [] }; // החלף ב-DB ריק
+                selectedNode = null;
+                selectedStudentId = null;
+                saveDB();
+                el('#modal-cancel').click();
+            }
+        };
+    }
+
+    // --------------------------------------------------
+    //   מודאלים ספציפיים (הוספה, עריכה, שיבוץ)
+    // --------------------------------------------------
+    
+    function promptAddFloor(buildingId) {
+      showModal('הוספת קומה', `
+        <div class="row"><label>מספר מיון (חובה, קובע את הסדר):</label><input id="in-floor-num" type="number" /></div>
+        <div class="row"><label>שם תצוגה (רשות, אם ריק יוצג "קומה + מספר"):</label><input id="in-floor-display" /></div>
+      `, ()=>{
+        const num = el('#in-floor-num').value;
+        const name = el('#in-floor-display').value;
+        const [ok, msg] = addFloor(buildingId, num, name);
+        if (!ok) errorDialog(msg);
+      }, ()=>{});
+      el('#in-floor-num').focus();
+    }
+    
+    function promptAddRoom(floorId) {
+      promptInput('הוספת חדר', 'מספר/שם חדר:', '', (num)=>{
+        const [ok, msg] = addRoom(floorId, num);
+        if (!ok) errorDialog(msg);
+      }, 'in-room');
+    }
+    
+    function promptAddBed(roomId) {
+      promptInput('הוספת מיטה', 'מספר מיטה:', '', (num)=>{
+        const [ok, msg] = addBed(roomId, num);
+        if (!ok) errorDialog(msg);
+      }, 'in-bed', 'number');
+    }
+
+    /**
+     * מודאל גנרי להוספה מרובה (Bulk).
+     */
+    function promptBulkCreate(type, parentId, itemLabel, inputPlaceholder, logicFn, inputType='text') {
+        const title = `הוספת ${type} מרובים`;
+        showModal(title, `
+            <div class="row">
+                <label>${inputPlaceholder}</label>
+                <input id="in-bulk-items" type="${inputType}" placeholder="${inputPlaceholder}" />
+                <div class="muted" style="margin-top: 5px;">הפרד עם פסיקים או השתמש בטווחים (למשל: 1-4, 6)</div>
+            </div>
+        `,
+        ()=>{
+            const input = el('#in-bulk-items').value;
+            if (!input.trim()) { errorDialog('הקלט ריק.'); return; }
+            const results = logicFn(parentId, input); // קרא לפונקציית הלוגיקה
+            // הצג סיכום
+            let summary = `נוספו בהצלחה ${results.added} ${type}.`;
+            if (results.failed.length > 0) {
+                summary += `<br><br><strong>${results.failed.length} ${itemLabel} נכשלו (קיימים או קלט לא חוקי):</strong><br>${results.failed.slice(0, 5).join(', ')}${results.failed.length > 5 ? '...' : ''}`;
+            }
+            showModal('סיכום הוספה', `<div class="row">${summary}</div>`, null, 'סגור');
+
+        }, ()=>{});
+        el('#in-bulk-items').focus();
+    }
+
+    function promptEditBuilding(id, currentName) {
+        promptInput('עריכת שם מבנה', 'שם המבנה החדש:', currentName, (name)=>{
+            const [ok, msg] = updateBuilding(id, name);
+            if (!ok) errorDialog(msg);
+        }, 'in-building-name');
+    }
+    
+    function promptEditFloor(id, currentNum, currentDisplayName) {
+        showModal('עריכת קומה', `
+            <div class="row"><label>מספר מיון (חובה, קובע את הסדר):</label><input id="in-floor-num" type="number" value="${escapeHtml(currentNum)}" /></div>
+            <div class="row"><label>שם תצוגה (רשות):</label><input id="in-floor-display" value="${escapeHtml(currentDisplayName || '')}" /></div>
+        `, ()=>{
+            const num = el('#in-floor-num').value;
+            const name = el('#in-floor-display').value;
+            const [ok, msg] = updateFloor(id, num, name);
+            if (!ok) errorDialog(msg);
+        }, ()=>{});
+        el('#in-floor-num').focus();
+    }
+    
+    function promptEditRoom(id, currentNum) {
+        promptInput('עריכת מספר/שם חדר', 'מספר/שם החדר החדש:', currentNum, (num)=>{
+            const [ok, msg] = updateRoom(id, num);
+            if (!ok) errorDialog(msg);
+        }, 'in-room');
+    }
+
+    /**
+     * מודאל קלט גנרי (שדה אחד).
+     */
+    function promptInput(title, label, defaultValue, onOk, inputId, inputType='text') {
+        showModal(title, `
+            <div class="row">
+                <label>${label}</label>
+                <input id="${inputId}" type="${inputType}" value="${escapeHtml(defaultValue)}" />
+            </div>
+        `, ()=>{ onOk(el(`#${inputId}`).value); }, ()=>{});
+        el(`#${inputId}`).focus();
+    }
+
+    /**
+     * מודאל לשיבוץ בחור במיטה.
+     */
+    function promptAssign(bedId) {
+      const unassigned = getUnassignedStudents(); // קבל רשימת בחורים פנויים
+      
+      // שינוי: עדכון תצוגה ברשימת הבחירה
+      const options = unassigned.map(s => `<option value="${s.id}">${escapeHtml(s.lastName)} ${escapeHtml(s.firstName)} (${s.id})</option>`).join('');
+      
+      if (!options) {
+        errorDialog('אין בחורים פנויים — הוסף בחור חדש או פנה מיטה קיימת.');
+        return;
+      }
+      
+      showModal('שיבוץ בחור', `
+        <div class="row">
+          <label>בחר בחור:</label>
+          <select id="sel-student">${options}</select>
+        </div>
+      `,
+      ()=>{
+        const sid = el('#sel-student').value;
+        assignStudentToBed(bedId, sid); // בצע שיבוץ
+      }, ()=>{});
+    }
+
+    // ==================================================
+    //       פרק 11: לוגיקת ממשק - טבלת בחורים
+    // ==================================================
+    
+    const tblBody = el('#tbl-students tbody'); // שמירת מצביע לגוף הטבלה
+    let selectedStudentId = null; // משתנה גלובלי לבחור הנבחר
+
+    /**
+     * מרנדר את טבלת הבחורים, כולל סינון.
+     * @param {string} filter - מחרוזת החיפוש
+     */
+    function renderStudents(filter='') {
+      const q = filter.trim().toLowerCase(); // הכן את מחרוזת החיפוש
+      
+      // סנן את רשימת הבחורים
+      // שינוי: הרחבת החיפוש לשדות החדשים
+      const list = DB.students
+        .filter(s => !q || 
+          s.id.includes(q) || // חפש במזהה הראשי (ת.ז או דרכון)
+          s.firstName.toLowerCase().includes(q) || 
+          s.lastName.toLowerCase().includes(q) || 
+          (s.className && s.className.toLowerCase().includes(q)) || // חיפוש בכיתה
+          (s.city && s.city.toLowerCase().includes(q)) // חיפוש בישוב
+        )
+        .sort((a,b)=>`${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`, 'he')); // מיין לפי א"ב
+
+      // קבל רשימת מזהים של לא משובצים (לצורך יעילות)
+      const unassignedIds = new Set(getUnassignedStudents().map(s=>s.id));
+
+      tblBody.innerHTML = ''; // נקה טבלה
+      
+      // אפס כפתורים
+      els('#tbl-students tbody tr').forEach(r => r.classList.remove('selected'));
+      el('#btn-edit-student').disabled = true;
+      el('#btn-del-student').disabled = true;
+
+      // בנה את שורות הטבלה
+      for (const s of list) {
+        const tr = document.createElement('tr');
+        tr.dataset.id = s.id;
+        
+        const isAssigned = !unassignedIds.has(s.id);
+        let locationText = '—';
+
+        if (isAssigned) {
+            const loc = getStudentBed(s.id); // מצא מיקום
+            if (loc) {
+                const floorName = loc.floor.displayName || `קומה ${loc.floor.floor_number}`;
+                locationText = `${loc.building.name}, ${floorName}, חדר ${loc.room.room_number}, מיטה ${loc.bed.bed_number}`;
+            }
+        }
+
+        // שינוי: התאמת השדות בטבלה למבנה החדש
+        tr.innerHTML = `
+          <td title="${escapeHtml(s.lastName)}">${escapeHtml(s.lastName)}</td>
+          <td title="${escapeHtml(s.firstName)}">${escapeHtml(s.firstName)}</td>
+          <td title="${escapeHtml(s.id)}">${escapeHtml(s.id)}</td>
+          <td title="${escapeHtml(s.className || '—')}">${escapeHtml(s.className || '—')}</td>
+          <td title="${escapeHtml(s.city || '—')}">${escapeHtml(s.city || '—')}</td>
+          <td title="${escapeHtml(s.phone || '—')}">${escapeHtml(s.phone || '—')}</td>
+          <td title="${locationText}">${locationText}</td>
+        `;
+        
+        // הוסף מאזין לבחירת שורה
+        // --- *** התיקון כאן *** ---
+        // שינוי: הלחיצה קוראת ל-selectAndShowEditModal במקום ל-selectStudent
+        tr.addEventListener('click', ()=> selectAndShowEditModal(s.id, tr));
+        // --- *** סוף התיקון *** ---
+        tblBody.appendChild(tr);
+
+        // אם הבחור הזה הוא הנבחר, סמן אותו
+        if (selectedStudentId === s.id) tr.classList.add('selected');
+      }
+    }
+
+    /**
+     * מסמן בחור כנבחר בטבלה.
+     * @param {string} id - מזהה הבחור
+     * @param {HTMLElement | null} elem - השורה שנלחצה (אופציונלי)
+     */
+    function selectStudent(id, elem=null) {
+        selectedStudentId = id;
+        
+        // הסר סימון מכל השורות
+        els('#tbl-students tbody tr').forEach(r=> r.classList.remove('selected'));
+        
+        // סמן את השורה
+        if (elem) {
+            elem.classList.add('selected');
+        } else {
+            // אם האלמנט לא סופק, חפש אותו
+            const tr = el(`tr[data-id="${id}"]`, tblBody);
+            if (tr) tr.classList.add('selected');
+        }
+        
+        // אפשר את כפתורי העריכה/מחיקה
+        el('#btn-edit-student').disabled = false;
+        el('#btn-del-student').disabled = false;
+    }
+
+    // --------------------------------------------------
+    //   מאזינים לכפתורי מסך "ניהול בחורים"
+    // --------------------------------------------------
+
+    // חיפוש
+    el('#search-student').addEventListener('input', e => renderStudents(e.target.value));
+
+    // שינוי: מודאל הוספת בחור חדש
+    el('#btn-add-student').addEventListener('click', ()=>{
+      showModal('הוספת בחור חדש', `
+        <div class="row-grid">
+            <div class="row"><label>שם משפחה (חובה):</label><input id="in-st-ln" /></div>
+            <div class="row"><label>שם פרטי (חובה):</label><input id="in-st-fn" /></div>
+        </div>
+        <div class="row-grid-3">
+            <div class="row"><label>תעודת זהות:</label><input id="in-st-id-card" /></div>
+            <div class="row"><label>מס דרכון:</label><input id="in-st-passport" /></div>
+            <div class="row"><label>גיל:</label><input id="in-st-age" type="number" /></div>
+        </div>
+        <div class="row-grid">
+            <div class="row"><label>כיתה:</label><input id="in-st-classname" /></div>
+            <div class="row"><label>קבוצה (גל):</label><input id="in-st-groupname" /></div>
+        </div>
+        <hr style="border:0; border-top: 1px solid var(--border); margin: 10px 0;">
+        <div class="row-grid-3">
+            <div class="row"><label>ישוב:</label><input id="in-st-city" /></div>
+            <div class="row"><label>רחוב:</label><input id="in-st-street" /></div>
+            <div class="row"><label>מספר בית/דירה:</label><input id="in-st-housenum" /></div>
+        </div>
+        <div class="row"><label>נייד תלמיד:</label><input id="in-st-phone" type="tel" /></div>
+        <div class="row" style="margin-top: 5px;"><small class="muted">חובה למלא לפחות אחד מהשדות: תעודת זהות או מס דרכון.</small></div>
+      `,
+      ()=>{
+        // אסוף את כל הנתונים מהטופס
+        const studentData = {
+          lastName: el('#in-st-ln').value,
+          firstName: el('#in-st-fn').value,
+          id_card: el('#in-st-id-card').value, // שדה ת.ז
+          passport: el('#in-st-passport').value, // שדה דרכון
+          age: el('#in-st-age').value,
+          className: el('#in-st-classname').value,
+          groupName: el('#in-st-groupname').value,
+          street: el('#in-st-street').value,
+          houseNum: el('#in-st-housenum').value,
+          city: el('#in-st-city').value,
+          phone: el('#in-st-phone').value
+        };
+        const [ok, msg] = addStudent(studentData); // קרא ללוגיקת ההוספה
+        if (!ok) errorDialog(msg);
+      }, ()=>{});
+      el('#in-st-ln').focus();
+    });
+
+    // --- *** התיקון כאן *** ---
+    /**
+     * הוספה: פונקציה חדשה שגם בוחרת וגם פותחת מודאל עריכה.
+     * @param {string} id - מזהה הבחור
+     * @param {HTMLElement | null} elem - השורה שנלחצה (אופציונלי)
+     */
+    function selectAndShowEditModal(id, elem = null) {
+      // 1. בצע את פעולת הבחירה הרגילה
+      selectStudent(id, elem);
+      
+      // 2. קרא לפונקציה שפותחת את מודאל העריכה
+      promptEditSelectedStudent();
+    }
+
+    /**
+     * הוספה: פונקציה שמכילה את הלוגיקה לפתיחת מודאל עריכה.
+     * פונקציה זו נקראת גם על ידי לחיצה על שורה וגם על ידי הכפתור "ערוך פרטים".
+     */
+    function promptEditSelectedStudent() {
+      if (!selectedStudentId) { errorDialog('יש לבחור בחור מהרשימה תחילה.'); return; }
+      const s = findStudent(selectedStudentId);
+      if (!s) return;
+      
+      showModal('עריכת פרטי בחור', `
+        <div class="row"><label>מזהה ראשי (ת.ז או דרכון):</label><input value="${escapeHtml(s.id)}" disabled /></div>
+        <div class="row-grid">
+            <div class="row"><label>שם משפחה (חובה):</label><input id="in-st-ln" value="${escapeHtml(s.lastName || '')}" /></div>
+            <div class="row"><label>שם פרטי (חובה):</label><input id="in-st-fn" value="${escapeHtml(s.firstName || '')}" /></div>
+        </div>
+        <div class="row-grid-3">
+            <div class="row"><label>תעודת זהות:</label><input id="in-st-id-card" value="${escapeHtml(s.id_card || '')}" /></div>
+            <div class="row"><label>מס דרכון:</label><input id="in-st-passport" value="${escapeHtml(s.passport || '')}" /></div>
+            <div class="row"><label>גיל:</label><input id="in-st-age" type="number" value="${escapeHtml(s.age || '')}" /></div>
+        </div>
+        <div class="row-grid">
+            <div class="row"><label>כיתה:</label><input id="in-st-classname" value="${escapeHtml(s.className || '')}" /></div>
+            <div class="row"><label>קבוצה (גל):</label><input id="in-st-groupname" value="${escapeHtml(s.groupName || '')}" /></div>
+        </div>
+        <hr style="border:0; border-top: 1px solid var(--border); margin: 10px 0;">
+        <div class="row-grid-3">
+            <div class="row"><label>ישוב:</label><input id="in-st-city" value="${escapeHtml(s.city || '')}" /></div>
+            <div class="row"><label>רחוב:</label><input id="in-st-street" value="${escapeHtml(s.street || '')}" /></div>
+            <div class="row"><label>מספר בית/דירה:</label><input id="in-st-housenum" value="${escapeHtml(s.houseNum || '')}" /></div>
+        </div>
+        <div class="row"><label>נייד תלמיד:</label><input id="in-st-phone" type="tel" value="${escapeHtml(s.phone || '')}" /></div>
+        <div class="row" style="margin-top: 5px;"><small class="muted">לא ניתן לשנות את המזהה הראשי. ניתן לעדכן את שדות הת.ז/דרכון המקוריים.</small></div>
+      `,
+      ()=>{
+        // אסוף את כל הנתונים מהטופס
+        const studentData = {
+          lastName: el('#in-st-ln').value,
+          firstName: el('#in-st-fn').value,
+          id_card: el('#in-st-id-card').value, // עדכון שדה ת.ז
+          passport: el('#in-st-passport').value, // עדכון שדה דרכון
+          age: el('#in-st-age').value,
+          className: el('#in-st-classname').value,
+          groupName: el('#in-st-groupname').value,
+          street: el('#in-st-street').value,
+          houseNum: el('#in-st-housenum').value,
+          city: el('#in-st-city').value,
+          phone: el('#in-st-phone').value
+        };
+        const [ok, msg] = updateStudent(s.id, studentData); // קרא ללוגיקת העדכון
+        if (!ok) errorDialog(msg);
+      }, ()=>{});
+      el('#in-st-ln').focus();
+    }
+
+    // שינוי: כפתור עריכה קורא לפונקציה החדשה
+    el('#btn-edit-student').addEventListener('click', promptEditSelectedStudent);
+    // --- *** סוף התיקון *** ---
+
+
+    // מחיקת בחור נבחר
+    el('#btn-del-student').addEventListener('click', async ()=>{
+      if (!selectedStudentId) { errorDialog('יש לבחור בחור מהרשימה תחילה.'); return; }
+      if (!(await confirmDialog('האם אתה בטוח? פעולה זו תסיר את הבחור ותפנה את מיטתו אם משובץ.'))) return;
+      
+      deleteStudent(selectedStudentId);
+      selectedStudentId = null; // אפס בחירה
+    });
+
+    // ==================================================
+    //            פרק 12: פונקציות מערכת כלליות
+    // ==================================================
+
+    /**
+     * מעדכן את כל הסטטיסטיקות בראש העמוד (מסך ניהול).
+     */
+    function updateStats() {
+      const totalStudents = DB.students.length;
+      const unassignedStudents = getUnassignedStudents().length;
+      
+      let totalBeds = 0, assigned = 0;
+      // --- התיקון כאן ---
+      // הוספנו בדיקות (|| []) כדי למנוע קריסה אם המערכים ריקים או חסרים
+      for (const b of (DB.buildings || [])) for (const f of (b.floors || [])) for (const r of (f.rooms || [])) {
+        totalBeds += (r.beds || []).length;
+        for (const bed of (r.beds || [])) if (bed.student_id) assigned++;
+      }
+      // --- סוף התיקון ---
+      const freeBeds = totalBeds - assigned;
+      
+      // עדכן את ה-HTML
+      el('#stat-students').textContent = `בחורים: ${totalStudents}`;
+      el('#stat-unassigned').textContent = `לא משובצים: ${unassignedStudents}`;
+      el('#stat-assigned').textContent = `משובצים: ${assigned}`;
+      el('#stat-beds-free').textContent = `מיטות פנויות: ${freeBeds}`;
+    }
+
+    /**
+     * פונקציית רענון מרכזית.
+     * קוראת לכל פונקציות הרינדור והעדכון הנדרשות.
+     */
+    function refreshAll() {
+      renderTree(); // רנדר עץ
+      renderStudents(el('#search-student').value || ''); // רנדר טבלת בחורים (עם פילטר קיים)
+      updateActionsPanel(); // עדכן פאנל פעולות (למקרה שהבחירה אופסה)
+    }
+
+    // ==================================================
+    //            פרק 13: הפעלה ראשונית ומאזינים גלובליים
+    // ==================================================
+
+    // קריאה ראשונית לרינדור הכל בעליית הדף
+    refreshAll();
+
+    // מאזין גלובלי למקשים (למשל, מקש Delete למחיקה מהירה)
+    document.addEventListener('keydown', (e)=>{
+      // אל תפעל אם הפוקוס בתוך שדה קלט
+      if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+        // אם נלחץ Delete ויש פריט נבחר בעץ (והמודאל לא פתוח)
+        if (e.key === 'Delete' && selectedNode && el('#modal-backdrop').classList.contains('hidden')) { // תיקון: בדיקה שהמודאל סגור
+          el('#btn-delete').click();
+        }
+        // אם נלחץ Delete ויש בחור נבחר (והמודאל לא פתוח)
+        else if (e.key === 'Delete' && selectedStudentId && el('#modal-backdrop').classList.contains('hidden')) { // תיקון: בדיקה שהמודאל סגור
+          el('#btn-del-student').click();
+        }
+      }
+    });
+
+  </script>
+</body>
+</html>
