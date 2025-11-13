@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>מערכת ניהול פנימייה Pro Max — גרסה 5.1 (היסטוריית שיבוצים)</title>
+  <title>מערכת ניהול פנימייה Pro Max — גרסה 5.3 (תאריכים עבריים)</title>
+  <!-- חדש: הוספת ספרייה להמרת תאריך עברי -->
+  <script src="bundle.min.js"></script>
   <style>
     /* ==================================== */
     /* הגדרות עיצוב (CSS)                   */
@@ -67,6 +69,8 @@
     /* ==================================== */
     .tree-wrap { padding: 10px; display: flex; flex-direction: column; min-height: 0; }
     .tree-header { display:flex; gap:8px; align-items:center; justify-content: space-between; margin-bottom: 8px; }
+    .tree-toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; } /* הוספה: סרגל כלים חדש */
+
     .tree {
       flex: 1; overflow: auto; padding: 12px; background: var(--muted); border-radius: 10px; border: 1px solid var(--border);
     }
@@ -143,7 +147,8 @@
     /* תא מיטה בודד */
     .bed-cell {
         width: 100px;
-        min-height: 70px;
+        /* שינוי: הגדלת גובה מינימלי כדי להכיל את השיעור */
+        min-height: 80px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -158,16 +163,50 @@
         line-height: 1.2;
         overflow: hidden;
         box-shadow: 0 1px 3px rgba(0,0,0,.05);
+        position: relative; /* הוספה: עבור מיקום הקו האנכי */
+        padding-right: 8px; /* הוספה: הזחה משמאל עבור הקו */
     }
     .bed-cell:hover { transform: translateY(-1px); }
     .bed-cell.unassigned { border-color: var(--warn); background: #fef3c7; color: var(--text); } /* מיטה פנויה */
     .bed-cell.assigned { border-color: var(--success); background: #d1fae5; color: var(--text); } /* מיטה תפוסה */
     .bed-cell.selected-bed { outline: 3px solid var(--danger); border-color: var(--danger); } /* מיטה נבחרה */
 
+    /* הוספה (חדש): הקו האנכי לסימון השיעור */
+    .bed-cell::before {
+        content: '';
+        position: absolute;
+        right: 0; /* הצמד לימין */
+        top: 0;
+        bottom: 0;
+        width: 4px; /* עובי הקו - 4px כפי שהומלץ */
+        background-color: transparent; /* ברירת מחדל: שקוף */
+        border-radius: 0 8px 8px 0; /* פינות מעוגלות רק בצד ימין */
+    }
+    
+    /* מחלקה שתכיל את הצבע של השיעור */
+    .bed-cell[data-class-color]::before {
+        background-color: var(--class-color); /* שימוש במשתנה המוגדר דינמית */
+    }
+
     .bed-number { font-weight: 800; font-size: 1em; }
     .bed-student-name { font-size: 0.75em; color: var(--text-dim); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .bed-cell.assigned .bed-student-name { color: var(--accent-2); }
     
+    /* הוספה: עיצוב השיעור בכרטיס המיטה */
+    .bed-student-class {
+        font-size: 0.7em;
+        color: var(--text-dim);
+        font-weight: 600;
+        max-width: 100%; 
+        white-space: nowrap; 
+        overflow: hidden; 
+        text-overflow: ellipsis;
+        margin-top: -2px; 
+        /* הסרת צבע הטקסט הדינמי מכאן כדי להשתמש בברירת המחדל של הטקסט (var(--text-dim)) */
+        /* הצבע הצהוב (הדגשה) יבוצע רק ע"י הקו האנכי. */
+    }
+    
+
     /* פריט מיטה (מוסתר - המיטות מוצגות כ-bed-cell) */
     .tree-item[data-type="bed"] { display: none; } 
 
@@ -178,11 +217,44 @@
     }
 
     /* עיצוב "צ'יפים" (תגיות) */
-    .chip { font-size: 12px; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-dim); background: var(--panel); }
+    .chip { 
+        font-size: 12px; 
+        padding: 3px 8px; 
+        border-radius: 999px; 
+        border: 1px solid var(--border); 
+        color: var(--text-dim); 
+        background: var(--panel); 
+        /* הוספה: עבור תגיות */
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-left: 5px;
+        margin-top: 5px;
+    }
     .chip.type { background: var(--border); color: var(--text); }
     .chip.assigned { color: var(--success); border-color: var(--success); background: #d1fae5; }
     .chip.unassigned { color: var(--warn); border-color: var(--warn); background: #fef3c7; }
     .chip.dummy { color: var(--text-dim); border-color: var(--border); background: var(--muted); }
+    .chip.tag-maoras { background: #fee2e2; border-color: #fca5a5; color: #dc2626; font-weight: 600; } /* אדום בהיר */
+    .chip.tag-hizuk { background: #e0f2f1; border-color: #4db6ac; color: #00897b; font-weight: 600; } /* טורקיז בהיר */
+    /* סוף הוספה: עבור תגיות */
+    
+    /* חדש: עיצוב כרטיס סטטוס נוכחי בהיסטוריה */
+    .status-card {
+        padding: 5px 10px;
+        border-radius: 6px;
+        font-size: 0.8em;
+        font-weight: 600;
+        margin-right: 10px;
+        display: inline-block;
+        white-space: nowrap;
+    }
+    .status-active { background: #d1fae5; color: var(--accent-2); border: 1px solid var(--success); }
+    .status-maoras { background: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5; }
+    .status-hizuk { background: #f0fdf4; color: #059669; border: 1px solid #4ade80; }
+    .status-unassigned { background: #fef3c7; color: var(--warn); border: 1px solid #fcd34d; }
+    /* סוף חדש */
+
 
     /* ==================================== */
     /* צד שמאל: פאנל פעולות
@@ -226,6 +298,20 @@
       text-align: right; padding: 10px; border-bottom: 1px solid var(--border); 
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; /* שינוי: מניעת שבירת שורות */
     }
+    /* --- *** תיקון *** --- */
+    /* חדש: עיצוב תא סטטוס כדי להכיל צ'יפים */
+    td.status-cell {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        /* display: flex; */ /* <-- הוסר */
+        /* flex-wrap: wrap; */ /* <-- הוסר */
+        vertical-align: middle; /* <-- הוסף */
+        padding-top: 8px;
+        padding-bottom: 8px;
+    }
+    /* --- *** סוף התיקון *** --- */
+
     tbody tr:hover { background: rgba(0,0,0,.03); }
     /* שינוי: הוספת cursor: pointer לשורות הטבלה */
     tbody tr { cursor: pointer; }
@@ -282,6 +368,9 @@
         border-bottom: 1px dashed var(--border); 
         font-size: 0.9em; 
         line-height: 1.4;
+        display: flex; /* חדש: ליישור אלמנטים */
+        align-items: center;
+        justify-content: space-between;
     }
     #bed-history li:last-child { border: 0; }
     #bed-history li small { 
@@ -291,106 +380,117 @@
     }
     #bed-history .status-moved { color: var(--warn); }
     #bed-history .status-deleted { color: var(--danger); }
+
+    /* חדש: עיצוב בורר הסינון במודאל השיבוץ */
+    .assign-toolbar {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+    .assign-select {
+        flex: 1;
+        min-width: 100px;
+    }
+    .assign-search {
+        flex: 2;
+    }
+    .assign-list-container {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+    }
+    .assign-list {
+        width: 100%;
+        min-height: 100px;
+        border: none;
+        padding: 0;
+        margin: 0;
+        outline: none;
+        font-size: 1rem;
+    }
+    .assign-list option {
+        padding: 8px 10px;
+        line-height: 1.4;
+    }
+
   </style>
 </head>
 <body>
 
-  <!-- ================================================== -->
-  <!--  מבנה האפליקציה (HTML)                             -->
-  <!-- ================================================== -->
   <div class="app" id="app">
     
-    <!-- ------------------------------------ -->
-    <!--  כותרת עליונה ולשוניות
-    <!-- ------------------------------------ -->
     <header>
-      <h1>מערכת ניהול פנימייה Pro Max — גרסה 5.1 (היסטוריית שיבוצים)</h1> <!-- שינוי: עדכון גרסה בכותרת -->
+      <h1>מערכת ניהול פנימייה Pro Max — גרסה 5.3 (תאריכים עבריים)</h1>
       <div class="tabs" role="tablist">
         <button class="tab-btn active" id="tab-manage" aria-selected="true">ניהול ושיבוצים</button>
         <button class="tab-btn" id="tab-students" aria-selected="false">ניהול בחורים</button>
       </div>
     </header>
 
-    <!-- ================================================== -->
-    <!--  אזור 1: ניהול ושיבוצים (תצוגת עץ)
-    <!-- ================================================== -->
     <section id="pane-manage" class="main">
       
-      <!-- ------------------------------------ -->
-      <!--  צד ימין: עץ מבנים
-      <!-- ------------------------------------ -->
       <div class="card tree-wrap">
         <div class="tree-header">
-          <!-- סטטיסטיקות -->
           <div class="stats">
             <div class="stat" id="stat-students">בחורים: 0</div>
             <div class="stat" id="stat-unassigned">לא משובצים: 0</div>
             <div class="stat" id="stat-assigned">משובצים: 0</div>
             <div class="stat" id="stat-beds-free">מיטות פנויות: 0</div>
           </div>
-          <!-- כפתורי ייבוא/ייצוא ואיפוס -->
           <div class="row-inline" style="gap: 12px; margin-right: auto;">
             <button class="btn secondary" id="btn-export-db">גיבוי ל-JSON</button>
             <button class="btn secondary" id="btn-import-db">טען גיבוי (JSON)</button>
             <button class="btn danger" id="btn-reset-data">איפוס נתונים</button>
           </div>
-          <!-- כפתור הוספת מבנה -->
           <div class="row-inline">
             <button class="btn primary" id="btn-add-building">הוסף מבנה חדש</button>
           </div>
         </div>
-        <!-- קונטיינר של עץ המבנים (ירונדר ע"י JS) -->
+        
+        <!-- הוספה: סרגל כלים לחיפוש בעץ המבנים -->
+        <div class="tree-toolbar">
+            <input id="search-rooms" class="search" placeholder="חפש חדר (לפי מספר) או בחור משובץ..." />
+        </div>
+        
         <div class="tree" id="tree"></div>
       </div>
 
-      <!-- ------------------------------------ -->
-      <!--  צד שמאל: פאנל פעולות
-      <!-- ------------------------------------ -->
       <aside class="card actions" id="actions">
         <h3 id="actions-title">בחר פריט מהעץ</h3>
         <div class="muted" id="actions-details">—</div>
-        <!-- כפתורי פעולה (ירונדרו ע"י JS) -->
         <div id="actions-buttons" style="display: grid; gap: 8px; grid-auto-rows: min-content;"></div>
         
-        <!-- הוספה: קונטיינר להיסטוריית מיטה -->
         <div id="bed-history" class="hidden"></div>
 
         <div style="margin-top:auto"></div>
-        <!-- כפתור מחיקה -->
         <button class="btn danger" id="btn-delete" disabled>מחק פריט נבחר</button>
       </aside>
     </section>
 
-    <!-- ================================================== -->
-    <!--  אזור 2: ניהול בחורים (טבלה) - מוסתר בתחילה
-    <!-- ================================================== -->
     <section id="pane-students" class="hidden">
       <div class="card students" style="padding: 12px;">
-        <!-- סרגל כלים -->
         <div class="toolbar">
-          <input id="search-student" class="search" placeholder="חפש בחור לפי שם, ת.ז, כיתה או ישוב…" /> <!-- שינוי: עדכון placeholder -->
-          <button class="btn primary" id="btn-add-student">הוסף בחור חדש</button>
+          <input id="search-student" class="search" placeholder="חפש בחור לפי שם, ת.ז, כיתה או ישוב…" /> <button class="btn primary" id="btn-add-student">הוסף בחור חדש</button>
           <button class="btn secondary" id="btn-import-students">ייבוא מ-CSV</button>
           <button class="btn" id="btn-edit-student" disabled>ערוך פרטים</button>
           <button class="btn secondary" id = "btn-export-students-csv">ייצא רשימת בחורים ל-CSV</button>
           <button class="btn danger" id="btn-del-student" disabled>מחק בחור נבחר</button>
         </div>
-        <!-- אלמנטים מוסתרים לבחירת קבצים -->
         <input type="file" id="csv-file-input" accept=".csv" class="hidden" />
         <input type="file" id="json-file-input" accept="application/json" class="hidden" />
-        <!-- טבלת בחורים -->
         <div style="overflow:auto;">
           <table id="tbl-students">
-            <!-- שינוי: עדכון כותרות הטבלה -->
             <thead>
               <tr>
-                <th style="width: 15%">שם משפחה</th>
-                <th style="width: 15%">שם פרטי</th>
-                <th style="width: 12%">תעודת זהות</th>
-                <th style="width: 10%">כיתה</th>
-                <th style="width: 15%">ישוב</th>
-                <th style="width: 13%">טלפון</th>
-                <th style="width: 20%">מיקום שיבוץ</th>
+                <th style="width: 13%">שם משפחה</th>
+                <th style="width: 13%">שם פרטי</th>
+                <th style="width: 10%">סטטוס</th> <!-- חדש: עמודת סטטוס -->
+                <th style="width: 10%">תעודת זהות</th>
+                <th style="width: 8%">כיתה</th>
+                <th style="width: 13%">ישוב</th>
+                <th style="width: 12%">טלפון</th>
+                <th style="width: 21%">מיקום שיבוץ</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -401,9 +501,6 @@
 
   </div>
 
-  <!-- ================================================== -->
-  <!--  מודאל (חלון קופץ) - מוסתר בתחילה
-  <!-- ================================================== -->
   <div class="modal-backdrop hidden" id="modal-backdrop" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <h4 id="modal-title">כותרת</h4>
@@ -415,9 +512,6 @@
     </div>
   </div>
 
-  <!-- ================================================== -->
-  <!--  קוד JavaScript
-  <!-- ================================================== -->
   <script>
     // ==================================================
     //            פרק 1: שמירת נתונים (LocalStorage)
@@ -435,7 +529,14 @@
       if (!raw) return { seq: {building:1, floor:1, room:1, bed:1, student:1}, buildings: [], students: [] };
       try {
         // נסה לפענח את ה-JSON מהטקסט השמור
-        return JSON.parse(raw);
+        const loadedDB = JSON.parse(raw);
+        // ודא שדות חדשים קיימים (לצורך תאימות לאחור)
+        loadedDB.students = loadedDB.students.map(s => ({
+            ...s,
+            tags: s.tags || [],
+            status_data: s.status_data || {}
+        }));
+        return loadedDB;
       } catch {
         // במקרה של שגיאה בפענוח (למשל, נתונים פגומים), החזר מבנה נתונים ריק
         return { seq: {building:1, floor:1, room:1, bed:1, student:1}, buildings: [], students: [] };
@@ -501,6 +602,39 @@
     function escapeHtml(s) {
       return String(s).replace(/[&<>"]+/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
     }
+    
+    /**
+     * הוספה: פונקציה לבחירת צבע עקבי עבור שם שיעור
+     * @param {string} str - שם השיעור
+     * @returns {string} - צבע הקסדצימלי
+     */
+    function getColorForClass(str) {
+      if (!str) return 'transparent'; // במקום var(--text-dim) נחזיר שקוף אם אין שיעור
+      
+      // רשימת צבעים בטוחים וקריאים (נוסחו מחדש כדי שיהיו שונים מ ירוק/אדום)
+      const colors = [
+        '#303F9F', // כחול כהה (אינדיגו)
+        '#F57C00', // כתום עמוק
+        '#C2185B', // ורוד/בורדו (פונקציה)
+        '#0288D1', // כחול בהיר (רויאל)
+        '#7B1FA2', // סגול
+        '#5D4037', // חום
+        '#00796B', // ירוק כחלחל (טיל)
+        '#AFB42B', // ליים (צהוב ירקרק)
+        '#D32F2F', // אדום עמוק (לשימוש זהיר)
+        '#388E3C'  // ירוק בינוני
+      ];
+      
+      // פונקציית האש פשוטה
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        hash = hash & hash; // המרה ל-32ביט
+      }
+      const index = Math.abs(hash) % colors.length;
+      return colors[index];
+    }
+
 
     /**
      * מפענח קלט של טווחים (למשל: "1-3, 5, 10") למערך של מספרים או מחרוזות.
@@ -535,21 +669,102 @@
       }
       return Array.from(results);
     }
+    
+/**
+     * חדש: פונקציה להמרת תאריך ISO לתאריך עברי (תאריך בלבד)
+     * @param {string} isoString - תאריך בפורמט ISO או YYYY-MM-DD
+     * @returns {string} - תאריך עברי (למשל: "כ"ה כסלו תשפ"ה")
+     */
+    function toHebrewDate(isoString) {
+        if (!isoString) return '';
+        try {
+            const date = new Date(isoString);
+            if (isNaN(date.getTime())) return ''; // תאריך לא תקין
+            
+            // ודא שהספרייה hebcal נטענה
+            if (typeof hebcal === 'undefined' || typeof hebcal.HDate === 'undefined') {
+                 console.error("Hebcal library not loaded.");
+                 return new Date(isoString).toLocaleDateString('he-IL'); // Fallback ללועזי
+            }
+            
+            const hdate = new hebcal.HDate(date);
+            
+            // --- *** התיקון נמצא כאן *** ---
+
+            // 1. קבל יום + חודש בגימטריה, ללא ניקוד (הארגומנט הראשון 'true')
+            //    וללא שנה (הארגומנט השני 'true')
+            //    זה ייתן: "י"ח חשון"
+            const dayMonth = hdate.renderGematriya(true, true);
+            
+            // 2. קבל את השנה (למשל 5786) והמר אותה לגימטריה (למשל "תשפ"ו")
+            //    הפונקציה 'hebcal.gematriya' נטענה מהקובץ bundle.min.js
+            const year = hebcal.gematriya(hdate.getFullYear());
+
+            // 3. חבר הכל ביחד עם פסיק
+            return dayMonth + " " + year;
+            
+            // --- *** סוף התיקון *** ---
+
+        } catch (e) {
+            console.error("Error converting to Hebrew date:", e, isoString);
+            return ''; // החזר ריק במקרה של שגיאה בספרייה
+        }
+    }
+
 
     /**
-     * הוספה: פונקציית עזר לפרמוט תאריך ושעה
+     * שינוי: פונקציית עזר לפרמוט תאריך עברי ושעה
      * @param {string} isoString - תאריך בפורמט ISO
-     * @returns {string} - תאריך ושעה בפורמט קריא
+     * @returns {string} - תאריך עברי ושעה בפורמט קריא
      */
     function formatDate(isoString) {
       if (!isoString) return 'לא ידוע';
-      return new Date(isoString).toLocaleString('he-IL', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+      try {
+        const date = new Date(isoString);
+        if (isNaN(date.getTime())) return 'תאריך לא תקין';
+
+        // המרה לתאריך עברי
+        const hebrewDateStr = toHebrewDate(isoString); // שימוש חוזר בפונקציה החדשה
+
+        // קבלת שעה לועזית
+        const timeStr = date.toLocaleString('he-IL', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        // אם ההמרה לעברית נכשלה (למשל הספרייה לא נטענה), החזר תאריך לועזי מלא
+        if (!hebrewDateStr) {
+             return date.toLocaleString('he-IL', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              });
+        }
+        
+        return `${hebrewDateStr}, ${timeStr}`;
+      } catch (e) {
+          return 'שגיאת תאריך';
+      }
+    }
+
+    /**
+     * הוספה: פונקציה להמרת תאריך ISO (או YYYY-MM-DD) לפורמט קלט HTML (YYYY-MM-DD)
+     * @param {string} isoString - תאריך בפורמט ISO או YYYY-MM-DD
+     * @returns {string} - תאריך בפורמט YYYY-MM-DD
+     */
+    function toHtmlDate(isoString) {
+      if (!isoString) return '';
+      // אם זה כבר בפורמט YYYY-MM-DD (כמו ש-input type="date" מייצר), החזר אותו
+      if (isoString.match(/^\d{4}-\d{2}-\d{2}$/)) return isoString; 
+
+      try {
+        // נסה לפרסר ISO מלא
+        return new Date(isoString).toISOString().split('T')[0];
+      } catch {
+        return '';
+      }
     }
 
 
@@ -675,25 +890,25 @@
       return null;
     }
 
-    /**
-     * מחזיר רשימה של כל הבחורים שאינם משובצים כרגע באף מיטה.
-     * @returns {Array<object>} - מערך של אובייקטי בחורים
-     */
-    function getUnassignedStudents() {
-        const assigned = new Set(); // שימוש ב-Set לביצועים מהירים
-        // סרוק את כל המיטות ואסוף מזהי בחורים משובצים
-        for (const b of DB.buildings) {
-            for (const f of b.floors) {
-                for (const r of f.rooms) { 
-                    for (const bed of r.beds) {
-                        if (bed.student_id) assigned.add(bed.student_id);
-                    }
+/**
+ * מחזיר רשימה של כל הבחורים שאינם משובצים כרגע באף מיטה.
+ * @returns {Array<object>} - מערך של אובייקטי בחורים
+ */
+function getUnassignedStudents() {
+    const assigned = new Set(); // שימוש ב-Set לביצועים מהירים
+    // סרוק את כל המיטות ואסוף מזהי בחורים משובצים
+    for (const b of DB.buildings) {
+        for (const f of b.floors) {
+            for (const r of f.rooms) { 
+                for (const bed of r.beds) {
+                    if (bed.student_id) assigned.add(bed.student_id);
                 }
             }
         }
-        // סנן את רשימת הבחורים הכללית
-        return DB.students.filter(s => !assigned.has(s.id));
     }
+    // סנן את רשימת הבחורים הכללית
+    return DB.students.filter(s => !assigned.has(s.id));
+}
 
     // --------------------------------------------------
     //   חלק 4.3: פונקציות הוספה (Create)
@@ -779,7 +994,9 @@
       const newStudent = {
         ...studentData, // כולל id_card, passport, age, className וכו'
         id: primaryId, // הוסף/דרוס את שדה ה-ID הראשי
-        type: 'student'
+        type: 'student',
+        tags: [], // חדש: מערך תגיות
+        status_data: {} // חדש: נתוני סטטוס מיוחדים (תאריכים)
       };
 
       DB.students.push(newStudent);
@@ -889,7 +1106,7 @@
       if (!s) return [false, 'בחור לא נמצא'];
       
       const {
-        lastName, firstName, id_card, passport, age, className, groupName, street, houseNum, city, phone
+        lastName, firstName, id_card, passport, age, className, groupName, street, houseNum, city, phone, tags, status_data
       } = studentData;
       
       const sLastName = String(lastName).trim();
@@ -912,7 +1129,7 @@
       s.lastName = sLastName;
       s.firstName = sFirstName;
       s.id_card = String(id_card || '').trim(); // עדכן את שדה הת.ז
-      s.passport = String(passport || '').trim(); // עדכן את שדה הדרכון
+      s.passport = String(passport || '').trim(); // עדכון שדה דרכון
       s.age = String(age || '').trim();
       s.className = String(className || '').trim();
       s.groupName = String(groupName || '').trim();
@@ -920,6 +1137,8 @@
       s.houseNum = String(houseNum || '').trim();
       s.city = String(city || '').trim();
       s.phone = String(phone || '').trim();
+      s.tags = Array.isArray(tags) ? tags : []; // חדש: עדכון תגיות
+      s.status_data = status_data || {}; // חדש: עדכון נתוני סטטוס
       
       // מיין מחדש את רשימת הבחורים (כי השם אולי השתנה)
       DB.students.sort((a,b)=>`${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`, 'he'));
@@ -1114,12 +1333,16 @@
         showModal('בחר סוג גיבוי', modalHtml, null, 'ביטול');
         
         el('#modal-ok').style.display = 'none'; // הסתר כפתור "אישור" רגיל
+        
+        // חדש: קבלת תאריך עברי לשם הקובץ
+        const hebrewDateStr = toHebrewDate(new Date().toISOString()).replace(/ /g, '_') || new Date().toISOString().slice(0, 10);
+
 
         // גיבוי מלא
         el('#export-option-full').onclick = () => {
             const dbCopy = JSON.parse(JSON.stringify(DB)); // עותק מלא
             dbCopy.exportType = 'full';
-            downloadJSON(dbCopy, `Pnimia_Backup_Full_${new Date().toISOString().slice(0, 10)}.json`);
+            downloadJSON(dbCopy, `Pnimia_Backup_Full_${hebrewDateStr}.json`);
             el('#modal-cancel').click(); // סגירת המודאל
         };
         
@@ -1139,7 +1362,7 @@
                 }
             }
             structureCopy.exportType = 'structure_only';
-            downloadJSON(structureCopy, `Pnimia_Backup_Structure_${new Date().toISOString().slice(0, 10)}.json`);
+            downloadJSON(structureCopy, `Pnimia_Backup_Structure_${hebrewDateStr}.json`);
             el('#modal-cancel').click();
         };
         
@@ -1150,7 +1373,7 @@
                 seq: { student: DB.seq.student }, // שמור את הרצף של הבחורים
                 exportType: 'students_only'
             };
-            downloadJSON(studentsOnly, `Pnimia_Backup_Students_${new Date().toISOString().slice(0, 10)}.json`);
+            downloadJSON(studentsOnly, `Pnimia_Backup_Students_${hebrewDateStr}.json`);
             el('#modal-cancel').click();
         };
     }
@@ -1170,6 +1393,12 @@
                 if (type === 'full' && importedData.buildings && importedData.students && importedData.seq) {
                     if (await confirmDialog('האם אתה בטוח שברצונך לטעון גיבוי מלא? **פעולה זו תחליף את כל הנתונים הנוכחיים.**')) {
                         DB = importedData; // החלפה מלאה של ה-DB
+                        // ודא שדות חדשים קיימים לאחר טעינה מלאה
+                        DB.students = DB.students.map(s => ({
+                            ...s,
+                            tags: s.tags || [],
+                            status_data: s.status_data || {}
+                        }));
                         selectedNode = null;
                         selectedStudentId = null;
                         saveDB(); // שמירה וריענון
@@ -1194,10 +1423,14 @@
                 // טיפול בגיבוי בחורים
                 else if (type === 'students_only' && importedData.students) {
                     if (await confirmDialog('האם אתה בטוח שברצונך לטעון רשימת בחורים? **פעולה זו תחליף את כל רשימת הבחורים הקיימת ותאפס את כל השיבוצים.** מבנה הפנימייה יישמר.')) {
-                        DB.students = importedData.students;
+                        DB.students = importedData.students.map(s => ({
+                            ...s,
+                            tags: s.tags || [],
+                            status_data: s.status_data || {}
+                        }));
                         DB.seq.student = importedData.seq.student;
                         // איפוס כל השיבוצים הקיימים
-                        for (const b of DB.buildings) for (const f of b.floors) for (const r of f.rooms) {
+                        for (const b of DB.buildings) for (const f of b.floors) for (const r of b.rooms) {
                            for (const bed of r.beds) {
                                bed.student_id = null;
                                bed.history = []; // הוספה: אפס היסטוריה
@@ -1223,7 +1456,7 @@
     // ==================================================
 
     /**
-     * *** תיקון: פונקציה זו עודכנה לייבא 10 עמודות ***
+     * *** תיקון: פונקציה זו עודכנה לייצא 10 עמודות ***
      * מפענח טקסט CSV לרשימת אובייקטי בחורים לפי מבנה האקסל
      * @param {string} csvText - תוכן קובץ ה-CSV
      * @returns {Array<object>} - מערך בחורים
@@ -1267,7 +1500,9 @@
                     street: values[6] || '', // רחוב (הוזז מ-7)
                     houseNum: values[7] || '', // מס בית ודירה (הוזז מ-8)
                     city: values[8] || '', // ישוב (הוזז מ-9)
-                    phone: values[9] || '' // נייד תלמיד (הוזז מ-10)
+                    phone: values[9] || '', // נייד תלמיד (הוזז מ-10)
+                    tags: [], // חדש: אתחול תגיות
+                    status_data: {} // חדש: אתחול נתוני סטטוס
                 });
             }
         });
@@ -1344,7 +1579,9 @@
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.setAttribute("href", url);
-      link.setAttribute("download", `Pnimia_Students_Export_${new Date().toISOString().slice(0, 10)}.csv`);
+      // חדש: שימוש בתאריך עברי לשם הקובץ
+      const hebrewDateStr = toHebrewDate(new Date().toISOString()).replace(/ /g, '_') || new Date().toISOString().slice(0, 10);
+      link.setAttribute("download", `Pnimia_Students_Export_${hebrewDateStr}.csv`);
       link.click();
       URL.revokeObjectURL(url);
     }
@@ -1477,6 +1714,7 @@
     }
 
     /**
+     * *** שינוי: הפונקציה עודכנה להוסיף צבע דינאמי לקו האנכי של השיעור ***
      * יוצר אלמנט HTML לתא מיטה.
      * @param {object} bed - אובייקט המיטה
      * @param {object | null} student - אובייקט הבחור (אם משובץ)
@@ -1486,14 +1724,28 @@
         const statusClass = student ? 'assigned' : 'unassigned'; // סטטוס (תפוס/פנוי)
         const label = student ? `${student.firstName} ${student.lastName}` : 'פנוי';
         
+        // הוספה: הכנת טקסט השיעור
+        const classNameText = (student && student.className) ? student.className : '—';
+        // הוספה: קבלת צבע לשיעור (שקוף אם אין שיעור)
+        const classColor = getColorForClass(student ? student.className : null);
+
         const cell = document.createElement('div');
         cell.className = `bed-cell ${statusClass}`;
         cell.dataset.id = bed.id;
         cell.dataset.type = 'bed';
         
+        // הוספה: קביעת המשתנה הדינמי ל-CSS עבור הקו האנכי
+        cell.style.setProperty('--class-color', classColor);
+        // הוספה: סימון האלמנט שיש לו צבע שיעור (כדי להפעיל את הפס ::before)
+        if(classColor !== 'transparent') {
+            cell.dataset.classColor = classColor;
+        }
+
+        // שינוי: החזרת צבע הטקסט של השיעור לצבע המשני (var(--text-dim)) כברירת מחדל
         cell.innerHTML = `
             <span class="bed-number">${bed.bed_number}</span>
             <span class="bed-student-name" title="${escapeHtml(label)}">${escapeHtml(label)}</span>
+            ${student ? `<span class="bed-student-class" title="${escapeHtml(classNameText)}">${escapeHtml(classNameText)}</span>` : ''}
         `;
         
         // הוספת מאזין לבחירת המיטה
@@ -1504,17 +1756,54 @@
         
         return cell;
     }
+    
+    /**
+     * חדש: בודק אם חדר או מיטה בחדר תואמים את מחרוזת הפילטר.
+     * @param {object} room - אובייקט החדר
+     * @param {string} filter - מחרוזת החיפוש
+     * @returns {boolean} - true אם החדר או מיטה בו תואמים את הפילטר
+     */
+    function filterRoomsAndBeds(room, filter) {
+        const q = filter.trim().toLowerCase();
+        if (!q) return true; // אם אין פילטר, הצג הכל
+
+        // 1. בדיקה לפי מספר חדר
+        if (room.room_number.toLowerCase().includes(q)) {
+            return true;
+        }
+
+        // 2. בדיקה לפי שם בחור משובץ
+        if (room.beds && room.beds.length > 0) {
+            return room.beds.some(bed => {
+                if (bed.student_id) {
+                    const student = findStudent(bed.student_id);
+                    if (student) {
+                        const fullName = `${student.firstName} ${student.lastName}`.toLowerCase();
+                        return fullName.includes(q);
+                    }
+                }
+                return false;
+            });
+        }
+        return false;
+    }
+
 
     /**
      * הפונקציה המרכזית שמרנדרת את כל עץ המבנים מחדש.
+     * @param {string} filter - מחרוזת לסינון חדרים/בחורים
      * מנקה את העץ הקיים ובונה אותו רקורסיבית.
      */
-    function renderTree() {
+    function renderTree(filter = '') {
       const tree = el('#tree');
       tree.innerHTML = ''; // נקה את העץ
       
       // פונקציה פנימית לבניית חדר (כולל המיטות שבו)
       const buildRoom = (room, floor, parentEl) => {
+        // חדש: אם החדר לא עומד בפילטר - דלג עליו.
+        const passesFilter = filterRoomsAndBeds(room, filter);
+        if (!passesFilter) return;
+
         const rWrap = createNodeWrapper('r', room.id);
         const hasBeds = room.beds && room.beds.length > 0;
         
@@ -1532,14 +1821,46 @@
             bedsContainer.className = 'beds-container';
             room.beds.sort((a,b)=>a.bed_number-b.bed_number).forEach(bed => {
                 const student = findStudent(bed.student_id); // מצא את הבחור המשובץ
-                const bedCell = createBedCell(bed, student);
-                // סמן אם המיטה הזו נבחרה
-                if (selectedNode && selectedNode.type === 'bed' && selectedNode.id === bed.id) {
-                    bedCell.classList.add('selected-bed');
+                // אם יש פילטר, ודא שהמיטה עומדת בו, גם אם החדר עמד בו רק בגלל מספרו.
+                if (filter) {
+                    const studentName = student ? `${student.firstName} ${student.lastName}` : '';
+                    const q = filter.trim().toLowerCase();
+                    // אם הפילטר הוא לפי שם בחור, ודא שהשם תואם.
+                    if (student && studentName.toLowerCase().includes(q) || room.room_number.toLowerCase().includes(q)) {
+                        const bedCell = createBedCell(bed, student);
+                        if (selectedNode && selectedNode.type === 'bed' && selectedNode.id === bed.id) {
+                            bedCell.classList.add('selected-bed');
+                        }
+                        bedsContainer.appendChild(bedCell);
+                    } else if (!student && room.room_number.toLowerCase().includes(q)) {
+                         // אם המיטה פנויה אבל החדר מתאים למספר החדר בפילטר - הצג
+                        const bedCell = createBedCell(bed, student);
+                        if (selectedNode && selectedNode.type === 'bed' && selectedNode.id === bed.id) {
+                            bedCell.classList.add('selected-bed');
+                        }
+                        bedsContainer.appendChild(bedCell);
+                    }
+                    // אם אין פילטר, או שהמיטה עומדת בפילטר
+                } else {
+                    const bedCell = createBedCell(bed, student);
+                    if (selectedNode && selectedNode.type === 'bed' && selectedNode.id === bed.id) {
+                        bedCell.classList.add('selected-bed');
+                    }
+                    bedsContainer.appendChild(bedCell);
                 }
-                bedsContainer.appendChild(bedCell);
             });
-            childrenContainer.appendChild(bedsContainer);
+            // אם אחרי הפילטור לא נשארו מיטות, נציג הודעה
+            if (bedsContainer.children.length === 0 && passesFilter) {
+                const dummy = document.createElement('div');
+                dummy.className = 'muted';
+                dummy.textContent = `אין מיטות תואמות לפילטר: "${filter}"`;
+                dummy.style.padding = '5px 20px';
+                childrenContainer.appendChild(dummy);
+            } else if (bedsContainer.children.length > 0) {
+                 childrenContainer.appendChild(bedsContainer);
+            } else {
+                 return; // אם החדר הוצג רק בגלל מספרו, אבל לא נשארו מיטות, והוא לא עומד בפילטר של שמות. נשאיר את זה כך.
+            }
         } else {
             // אם אין מיטות
             const dummy = document.createElement('div');
@@ -1554,6 +1875,10 @@
 
       // פונקציה פנימית לבניית קומה (כולל החדרים שבה)
       const buildFloor = (floor, building, parentEl) => {
+        // חדש: רק בנה קומה אם יש בה חדרים שעומדים בפילטר
+        const roomsInFloor = floor.rooms.filter(room => filterRoomsAndBeds(room, filter));
+        if (filter && roomsInFloor.length === 0) return;
+
         const fWrap = createNodeWrapper('f', floor.id);
         const hasRooms = floor.rooms && floor.rooms.length > 0;
         const displayName = floor.displayName || `קומה ${floor.floor_number}`;
@@ -1567,7 +1892,8 @@
         const childrenContainer = document.createElement('div');
         childrenContainer.className = 'tree-children';
         if (hasRooms) {
-            floor.rooms.forEach(room => buildRoom(room, floor, childrenContainer)); // קריאה רקורסיבית לחדרים
+            // חדש: עבר לולאה על החדרים שסוננו
+            floor.rooms.sort((a,b)=>a.room_number.localeCompare(b.room_number, undefined, { numeric: true })).forEach(room => buildRoom(room, floor, childrenContainer)); // קריאה רקורסיבית לחדרים
         } else {
             // אם אין חדרים
             const dummy = createTreeItem('אין חדרים להצגה', '', 'dummy', `dummy_r_${floor.id}`, false, false);
@@ -1579,6 +1905,11 @@
 
       // לולאה ראשית - עוברת על כל המבנים
       for (const building of DB.buildings.sort((a,b)=>a.name.localeCompare(b.name,'he'))) {
+        // חדש: בנה מבנה רק אם יש בו קומות שעומדות בפילטר
+        const floorsInBuilding = building.floors.filter(floor => floor.rooms.some(room => filterRoomsAndBeds(room, filter)));
+        if (filter && floorsInBuilding.length === 0) continue;
+
+
         const bWrap = createNodeWrapper('b', building.id);
         const hasFloors = building.floors && building.floors.length > 0;
         
@@ -1654,6 +1985,21 @@
     // ==================================================
     
     /**
+     * יוצר אינדיקטור סטטוס ויזואלי.
+     * @param {string} text - הטקסט להצגה (כותרת)
+     * @param {string} cls - המחלקה (לצביעה)
+     * @param {string} [title=''] - טקסט ל-tooltip
+     * @returns {HTMLElement}
+     */
+    function createStatusCard(text, cls, title = '') {
+        const span = document.createElement('span');
+        span.className = `status-card ${cls}`;
+        span.textContent = text;
+        if (title) span.title = title;
+        return span;
+    }
+
+    /**
      * הוספה: מרנדר את רשימת היסטוריית השיבוצים עבור מיטה.
      * @param {object} bed - אובייקט המיטה
      * @param {HTMLElement} container - האלמנט להכניס לתוכו את הרשימה
@@ -1672,40 +2018,148 @@
         // הצג מהאחרון לראשון
         bed.history.slice().reverse().forEach(entry => {
             const li = document.createElement('li');
-            li.innerHTML = `<strong>${escapeHtml(entry.studentName)}</strong> <span class="muted">(${entry.studentId})</span>`;
             
-            let dateText = `משובץ: ${formatDate(entry.dateAssigned)}`;
+            // חדש: יצירת אלמנט שם הבחור שיהיה ניתן ללחיצה
+            const nameContainer = document.createElement('div');
+            nameContainer.style.display = 'flex';
+            nameContainer.style.alignItems = 'center';
+            nameContainer.style.gap = '8px';
+            
+            const studentId = entry.studentId;
+            const student = findStudent(studentId);
+            
+            // אלמנט השם (יהפוך לקישור אם יש מיקום)
+            const nameEl = document.createElement('strong');
+            nameEl.textContent = escapeHtml(entry.studentName);
+            
+            let statusIndicator = null; // ברירת מחדל: null (כדי לא לנסות להוסיף)
+            
+            // --- בדיקת סטטוס נוכחי ---
+            if (student) {
+                const currentBedLocation = getStudentBed(studentId);
+                const isMaoras = student.tags && student.tags.includes('מאורס');
+                const isHizuk = student.tags && student.tags.includes('חיזוק');
+
+                if (currentBedLocation) {
+                    // סטטוס: משובץ כרגע
+                    const locationText = `${currentBedLocation.room.room_number}, מ' ${currentBedLocation.bed.bed_number}`;
+                    
+                    statusIndicator = createStatusCard(`🏠 משובץ: ${locationText}`, 'status-active', 'משובץ כעת במיטה זו');
+                    
+                    // הפיכת השם לקישור שיעבור למיטה הנוכחית
+                    nameEl.style.fontWeight = 'bold';
+                    nameEl.style.cursor = 'pointer';
+                    nameEl.onclick = (e) => {
+                         e.stopPropagation();
+                         switchTab('manage'); // ודא שאנחנו במסך הניהול
+                         selectedNode = { type: 'bed', id: currentBedLocation.bed.id }; // הגדר את המיטה הנוכחית כנבחרת
+                         refreshAll(currentBedLocation.bed.id); // <-- שינוי: הוספת bed.id לטובת גלילה
+                    };
+                } else if (isMaoras || isHizuk) {
+                    // סטטוס: לא משובץ, אבל יש לו תגית מיוחדת
+                    if (isMaoras) {
+                        // שינוי: שימוש ב-toHebrewDate
+                        const date = student.status_data.wedding_date ? ` (${toHebrewDate(student.status_data.wedding_date)})` : '';
+                         statusIndicator = createStatusCard(`${'💍 מאורס' + date}`, 'status-maoras', 'הבחור מאורס ומיועד לעזוב');
+                    } else if (isHizuk) {
+                        // שינוי: שימוש ב-toHebrewDate
+                        const date = student.status_data.return_date ? ` (חוזר: ${toHebrewDate(student.status_data.return_date)})` : '';
+                        statusIndicator = createStatusCard(`${'↩️ חיזוק' + date}`, 'status-hizuk', 'הבחור נמצא בחיזוק ומיועד לחזור');
+                    } else {
+                         statusIndicator = createStatusCard(`⚠️ פנוי (סטטוס מיוחד)`, 'status-unassigned');
+                    }
+                } else {
+                    // סטטוס: פנוי
+                    statusIndicator = createStatusCard(`❌ פנוי כרגע`, 'status-unassigned', 'לא משובץ כרגע באף מיטה');
+                }
+            } else {
+                 // סטטוס: נמחק מהרשימה
+                 statusIndicator = createStatusCard(`(הבחור נמחק)`, 'muted');
+            }
+            
+            // הרכבת האלמנט
+            nameContainer.appendChild(nameEl);
+            
+            if (statusIndicator) { // אם נוצר כרטיס סטטוס (כלומר לא מחרוזת טקסט)
+                nameContainer.appendChild(statusIndicator);
+            }
+            
+            // הוסף את המזהה (ת.ז/דרכון) כטקסט משני
+            const idSpan = document.createElement('span');
+            idSpan.className = 'muted';
+            idSpan.style.fontWeight = 'normal';
+            idSpan.textContent = `(${studentId})`;
+            nameContainer.appendChild(idSpan);
+            
+            li.appendChild(nameContainer);
+
+
+            // --- הצגת תאריכי שיבוץ/ביטול ---
+            let dateText = document.createElement('small');
+            dateText.style.textAlign = 'left';
+
+            // שינוי: שימוש ב-formatDate (שמכיל תאריך עברי)
+            let assignedText = `משובץ: ${formatDate(entry.dateAssigned)}`;
             
             if (entry.status === 'assigned') {
-                dateText += ' - <span style="color:var(--success)">עדיין כאן</span>';
+                assignedText += ' - <span style="color:var(--success)">עדיין כאן</span>';
             } else {
-                let action = 'עזב';
+                let actionText = ''; // נשתמש במשתנה זה כדי להכיל את התוכן של הסטטוס ביטול/מעבר
                 let actionClass = '';
                 
                 if (entry.status === 'student_deleted') {
-                    action = 'נמחק';
+                    actionText = `נמחק: ${formatDate(entry.dateUnassigned)}`;
                     actionClass = 'status-deleted';
                 }
-                if (entry.status === 'moved' && entry.movedToBedId) {
+                else if (entry.status === 'moved' && entry.movedToBedId) {
                     const loc = findBed(entry.movedToBedId);
-                    action = loc 
-                        ? `עבר לחדר ${loc.room.room_number}, מיטה ${loc.bed.bed_number}` 
-                        : 'עבר למיטה אחרת';
+                    const destinationText = loc 
+                        ? `חדר ${loc.room.room_number}, מיטה ${loc.bed.bed_number}` 
+                        : 'מיטה אחרת (ID: ' + entry.movedToBedId + ')';
+                    
+                    // NEW: Create a clickable link inside the HTML string
+                    actionText = `
+                        עבר ל
+                        <span class="bed-history-link" data-bed-id="${entry.movedToBedId}" style="color:var(--accent-2); text-decoration:underline; cursor:pointer;" title="לחץ למעבר למיטה">
+                            ${destinationText}
+                        </span>
+                        ב- ${formatDate(entry.dateUnassigned)}`;
                     actionClass = 'status-moved';
                 }
-                
-                dateText += ` | <span class="${actionClass}">${action}: ${formatDate(entry.dateUnassigned)}</span>`;
+                else { // entry.status === 'unassigned'
+                    actionText = `עזב: ${formatDate(entry.dateUnassigned)}`;
+                    actionClass = 'status-moved'; // נשתמש ב-status-moved רק כדי לצבוע בצבע אזהרה
+                }
+
+                assignedText += ` | <span class="${actionClass}">${actionText}</span>`;
             }
             
-            li.innerHTML += `<small>${dateText}</small>`;
+            dateText.innerHTML = assignedText;
+            li.appendChild(dateText);
             list.appendChild(li);
         });
 
         container.appendChild(list);
+        
+		// NEW: Add event listeners for the 'moved' links
+        container.querySelectorAll('.bed-history-link[data-bed-id]').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const bedId = Number(e.target.dataset.bedId);
+
+                el('#search-rooms').value = ''; // <-- *** הוסף את השורה הזו ***
+                
+                // Switch to manage tab, set selection, and refresh (with scroll)
+                switchTab('manage');
+                selectedNode = { type: 'bed', id: bedId };
+                refreshAll(bedId); // Pass the bedId for immediate scroll
+            });
+        });
     }
 
 
     /**
+     * *** שינוי: הפונקציה עודכנה לקבל ID לגלילה ***
      * מעדכן את פאנל הפעולות (צד שמאל) בהתאם לפריט שנבחר בעץ (selectedNode).
      */
     function updateActionsPanel() {
@@ -1771,10 +2225,53 @@
         details.innerHTML = `סוג: מיטה<br>מיקום: ${building.name}, ${floorName}, חדר ${room.room_number}, מיטה ${bed.bed_number}`;
         
         if (student) { // אם המיטה תפוסה
-          details.innerHTML += `<br>משובץ: ${escapeHtml(student.firstName)} ${escapeHtml(student.lastName)}`;
+          // שינוי (ג): הוספת שדה השיעור ומספר טלפון
+          const className = student.className ? escapeHtml(student.className) : '—';
+          const phone = student.phone ? escapeHtml(student.phone) : '—';
+          details.innerHTML += `<br>משובץ: ${escapeHtml(student.firstName)} ${escapeHtml(student.lastName)}
+                                <br>שיעור: ${className}
+                                <br>טלפון: ${phone}`;
+          
+          // חדש: הצגת תגיות מעל פרטי הבחור
+          const tagsHtml = (student.tags || []).map(tag => {
+              let tagClass = '';
+              let tagLabel = '';
+              let dateInfo = '';
+              
+              if (tag === 'מאורס') {
+                  tagClass = 'tag-maoras';
+                  tagLabel = '💍 מאורס';
+                  if (student.status_data.wedding_date) {
+                    // שינוי: שימוש ב-toHebrewDate
+                    dateInfo = ` (${toHebrewDate(student.status_data.wedding_date)})`;
+                  }
+              } else if (tag === 'חיזוק') {
+                  tagClass = 'tag-hizuk';
+                  tagLabel = '↩️ חיזוק';
+                   if (student.status_data.return_date) {
+                    // שינוי: שימוש ב-toHebrewDate
+                    dateInfo = ` (חוזר: ${toHebrewDate(student.status_data.return_date)})`;
+                  }
+              } else {
+                   tagLabel = tag;
+              }
+
+              return `<span class="chip ${tagClass}">${tagLabel}${dateInfo}</span>`;
+          }).join('');
+
+          if (tagsHtml) {
+              details.innerHTML += `<div style="margin-top: 8px;">${tagsHtml}</div>`;
+          }
+
+
           // שינוי: כפתור ביטול שיבוץ קורא ל-unassignBed
           btns.appendChild(primaryBtn('בטל שיבוץ', ()=> { unassignBed(bed.id); }));
-          btns.appendChild(btn('צפה/ערוך פרטי בחור', 'ghost', ()=> { switchTab('students'); selectStudent(student.id); }));
+          
+          // שינוי (ד): הכפתור פותח מודאל עריכה ישירות
+          btns.appendChild(btn('צפה/ערוך פרטי בחור', 'ghost', ()=> {
+              selectedStudentId = student.id; // קבע את הבחור הנבחר
+              promptEditSelectedStudent(); // פתח את מודאל העריכה
+          }));
         }
         else { // אם המיטה פנויה
           btns.appendChild(primaryBtn('שבץ בחור', ()=> promptAssign(bed.id)));
@@ -1839,6 +2336,15 @@
 
     // כפתור הוספת מבנה חדש (הראשי)
     el('#btn-add-building').addEventListener('click', promptAddFullBuilding);
+    
+    // חדש: מאזין לחיפוש חדרים
+    el('#search-rooms').addEventListener('input', (e) => {
+        // בטל בחירה נוכחית בעץ כדי למנוע קריסה של הפילטר
+        selectedNode = null; 
+        // רענן את העץ עם מחרוזת החיפוש
+        renderTree(e.target.value); 
+    });
+
 
     // ==================================================
     //       פרק 10: לוגיקת ממשק - חלונות קופצים (Prompts)
@@ -1928,7 +2434,7 @@
 
         // איפוס מבנים בלבד
         el('#reset-option-structures').onclick = async () => {
-            if (await confirmDialog('האם אתה בטוח שברצונך לאפס את כל המבנים? כל הקומות, החדרים והמיטות יימחקו, וכל השיבוצים יבוטלו. רשימת הבחורים תישמר.')) {
+            if (await confirmDialog('האם אתה בטוח שברצונך לאפס את כל המבנים? כל הקומות, החדרים והמיטות ימחקו, וכל השיבוצים יבוטלו. רשימת הבחורים תישמר.')) {
                 DB.buildings = [];
                 DB.seq.building = 1; DB.seq.floor = 1; DB.seq.room = 1; DB.seq.bed = 1;
                 saveDB();
@@ -1940,7 +2446,7 @@
             if (await confirmDialog('האם אתה בטוח שברצונך לאפס את כל הבחורים? כל רשימת הבחורים תימחק וכל השיבוצים יבוטלו. מבנה הפנימייה יישמר.')) {
                 DB.students = [];
                 // אפס שיבוצים קיימים
-                for (const b of DB.buildings) for (const f of b.floors) for (const r of f.rooms) {
+                for (const b of DB.buildings) for (const f of b.floors) for (const r of b.rooms) {
                     for (const bed of r.beds) {
                         bed.student_id = null;
                         bed.history = []; // הוספה: אפס היסטוריה
@@ -2064,26 +2570,72 @@
      * מודאל לשיבוץ בחור במיטה.
      */
     function promptAssign(bedId) {
-      const unassigned = getUnassignedStudents(); // קבל רשימת בחורים פנויים
+      const allUnassigned = getUnassignedStudents(); // קבל רשימת בחורים פנויים
       
-      // שינוי: עדכון תצוגה ברשימת הבחירה
-      const options = unassigned.map(s => `<option value="${s.id}">${escapeHtml(s.lastName)} ${escapeHtml(s.firstName)} (${s.id})</option>`).join('');
-      
-      if (!options) {
-        errorDialog('אין בחורים פנויים — הוסף בחור חדש או פנה מיטה קיימת.');
-        return;
-      }
-      
-      showModal('שיבוץ בחור', `
-        <div class="row">
-          <label>בחר בחור:</label>
-          <select id="sel-student">${options}</select>
+      // 1. קבל את רשימת השיעורים הייחודית לסינון
+      const uniqueClasses = Array.from(new Set(allUnassigned.map(s => s.className).filter(c => c))).sort();
+      const classOptions = uniqueClasses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+
+      // 2. HTML חדש הכולל סרגל כלים לחיפוש וסינון
+      const modalHtml = `
+        <div class="assign-toolbar">
+            <select id="sel-class" class="assign-select">
+                <option value="">(כל השיעורים)</option>
+                ${classOptions}
+            </select>
+            <input id="search-student-assign" class="assign-search" placeholder="חפש שם בחור..." />
         </div>
-      `,
+        <div class="row assign-list-container">
+          <label>בחר בחור:</label>
+          <select id="sel-student" class="assign-list" size="10"></select>
+        </div>
+      `;
+      
+      // פונקציית עזר לרינדור רשימת ה-select (תוך כדי סינון)
+      const updateStudentList = () => {
+          const selectEl = el('#sel-student');
+          const filterText = el('#search-student-assign').value.toLowerCase();
+          const filterClass = el('#sel-class').value;
+          
+          // סנן את רשימת הבחורים
+          const filteredStudents = allUnassigned.filter(s => {
+              const fullName = `${s.firstName} ${s.lastName}`.toLowerCase();
+              const classMatch = !filterClass || s.className === filterClass;
+              const textMatch = !filterText || fullName.includes(filterText) || (s.id && s.id.includes(filterText));
+              return classMatch && textMatch;
+          }).sort((a,b)=>`${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`, 'he'));
+
+          // בנה את האפשרויות מחדש
+          selectEl.innerHTML = filteredStudents.map(s => {
+              const className = s.className ? ` (שיעור: ${escapeHtml(s.className)})` : '';
+              return `<option value="${s.id}">${escapeHtml(s.lastName)} ${escapeHtml(s.firstName)}${className}</option>`
+          }).join('');
+
+          // בחר את הראשון אם יש רשימה
+          if (selectEl.options.length > 0) {
+              selectEl.options[0].selected = true;
+          }
+      };
+
+
+      // הצגת המודאל
+      showModal('שיבוץ בחור', modalHtml,
       ()=>{
         const sid = el('#sel-student').value;
+        if (!sid) {
+            errorDialog('יש לבחור בחור מהרשימה כדי לבצע שיבוץ.');
+            return;
+        }
         assignStudentToBed(bedId, sid); // בצע שיבוץ
       }, ()=>{});
+      
+      // הוספת מאזינים לאחר שהמודאל נטען
+      el('#search-student-assign').addEventListener('input', updateStudentList);
+      el('#sel-class').addEventListener('change', updateStudentList);
+
+      // רינדור ראשוני של הרשימה
+      updateStudentList();
+      el('#search-student-assign').focus(); // הגדר פוקוס על שדה החיפוש
     }
 
     // ==================================================
@@ -2138,10 +2690,44 @@
             }
         }
 
-        // שינוי: התאמת השדות בטבלה למבנה החדש
+        // חדש: יצירת תא סטטוס עם התגיות
+        let statusCellContent = '';
+        if (s.tags && s.tags.length > 0) {
+            const tagsHtml = s.tags.map(tag => {
+                let tagClass = '';
+                let tagLabel = '';
+                let dateInfo = '';
+                
+                if (tag === 'מאורס') {
+                    tagClass = 'tag-maoras';
+                    tagLabel = '💍 מאורס';
+                    if (s.status_data.wedding_date) {
+                        // שינוי: שימוש ב-toHebrewDate
+                        dateInfo = ` (${toHebrewDate(s.status_data.wedding_date)})`;
+                    }
+                } else if (tag === 'חיזוק') {
+                    tagClass = 'tag-hizuk';
+                    tagLabel = '↩️ חיזוק';
+                     if (s.status_data.return_date) {
+                        // שינוי: שימוש ב-toHebrewDate
+                        dateInfo = ` (חוזר: ${toHebrewDate(s.status_data.return_date)})`;
+                    }
+                } else {
+                    tagLabel = tag;
+                }
+                
+                return `<span class="chip ${tagClass}">${tagLabel}${dateInfo}</span>`;
+            }).join('');
+            // --- *** תיקון: עטיפת התגיות ב-div *** ---
+            statusCellContent = `<div style="display: flex; flex-wrap: wrap; gap: 0; margin: -5px 0 -5px -5px;">${tagsHtml}</div>`;
+        }
+
+
+        // שינוי: התאמת השדות בטבלה למבנה החדש (הוספת עמודת סטטוס)
         tr.innerHTML = `
           <td title="${escapeHtml(s.lastName)}">${escapeHtml(s.lastName)}</td>
           <td title="${escapeHtml(s.firstName)}">${escapeHtml(s.firstName)}</td>
+          <td class="status-cell" title="${s.tags && s.tags.length > 0 ? 'סטטוס מיוחד' : '—'}">${statusCellContent}</td>
           <td title="${escapeHtml(s.id)}">${escapeHtml(s.id)}</td>
           <td title="${escapeHtml(s.className || '—')}">${escapeHtml(s.className || '—')}</td>
           <td title="${escapeHtml(s.city || '—')}">${escapeHtml(s.city || '—')}</td>
@@ -2150,9 +2736,11 @@
         `;
         
         // הוסף מאזין לבחירת שורה
-        // --- *** התיקון כאן *** ---
-        // שינוי: הלחיצה קוראת ל-selectAndShowEditModal במקום ל-selectStudent
-        tr.addEventListener('click', ()=> selectAndShowEditModal(s.id, tr));
+        // --- *** שינוי (א) *** ---
+        // שינוי: לחיצה בודדת רק בוחרת
+        tr.addEventListener('click', ()=> selectStudent(s.id, tr));
+        // שינוי: לחיצה כפולה פותחת עריכה
+        tr.addEventListener('dblclick', ()=> promptEditSelectedStudent());
         // --- *** סוף התיקון *** ---
         tblBody.appendChild(tr);
 
@@ -2239,30 +2827,68 @@
       el('#in-st-ln').focus();
     });
 
-    // --- *** התיקון כאן *** ---
+    // --- *** שינוי (א) *** ---
+    // נמחקה הפונקציה selectAndShowEditModal
+    // --- *** סוף התיקון *** ---
+
     /**
-     * הוספה: פונקציה חדשה שגם בוחרת וגם פותחת מודאל עריכה.
-     * @param {string} id - מזהה הבחור
-     * @param {HTMLElement | null} elem - השורה שנלחצה (אופציונלי)
+     * פונקציה להצגת שדות התאריך בהתאם לתגיות הנבחרות.
      */
-    function selectAndShowEditModal(id, elem = null) {
-      // 1. בצע את פעולת הבחירה הרגילה
-      selectStudent(id, elem);
-      
-      // 2. קרא לפונקציה שפותחת את מודאל העריכה
-      promptEditSelectedStudent();
+    function updateTagDatesUI(s) {
+        const selectedTags = els('.tag-checkbox:checked').map(cb => cb.value);
+        const datesContainer = el('#tag-dates-container');
+        datesContainer.innerHTML = '';
+        
+        let datesHtml = '';
+        
+        if (selectedTags.includes('מאורס')) {
+            datesHtml += `
+                <div class="row">
+                    <label>תאריך חתונה (לצורך פינוי מיטה):</label>
+                    <input id="in-wedding-date" type="date" value="${toHtmlDate(s.status_data.wedding_date)}" />
+                </div>
+            `;
+        }
+        if (selectedTags.includes('חיזוק')) {
+            datesHtml += `
+                <div class="row">
+                    <label>תאריך חזרה מחיזוק (לתפוס מיטה חזרה):</label>
+                    <input id="in-return-date" type="date" value="${toHtmlDate(s.status_data.return_date)}" />
+                </div>
+            `;
+        }
+        
+        if (datesHtml) {
+            datesContainer.innerHTML = `<h5 style="margin-bottom: 5px; font-weight: 700; color: var(--accent-2);">הגדרות תאריך מיוחדות</h5>` + datesHtml;
+        }
     }
+
 
     /**
      * הוספה: פונקציה שמכילה את הלוגיקה לפתיחת מודאל עריכה.
-     * פונקציה זו נקראת גם על ידי לחיצה על שורה וגם על ידי הכפתור "ערוך פרטים".
+     * פונקציה זו נקראת גם על ידי לחיצה כפולה על שורה וגם על ידי הכפתור "ערוך פרטים".
      */
     function promptEditSelectedStudent() {
       if (!selectedStudentId) { errorDialog('יש לבחור בחור מהרשימה תחילה.'); return; }
       const s = findStudent(selectedStudentId);
       if (!s) return;
       
-      showModal('עריכת פרטי בחור', `
+      const ALL_TAGS = ['מאורס', 'חיזוק', 'ועד', 'מנהל'];
+      const currentTags = s.tags || [];
+
+      const tagsHtml = ALL_TAGS.map(tag => {
+        const isChecked = currentTags.includes(tag);
+        const tagClass = isChecked ? `chip tag-${tag.toLowerCase()}` : 'chip';
+        return `
+            <label class="${tagClass}" style="cursor: pointer; user-select: none;">
+                <input type="checkbox" class="tag-checkbox" value="${tag}" ${isChecked ? 'checked' : ''} style="margin-left: 5px;" />
+                ${tag}
+            </label>
+        `;
+      }).join('');
+      
+      // מבנה ה-HTML של המודאל
+      const modalHtml = `
         <div class="row"><label>מזהה ראשי (ת.ז או דרכון):</label><input value="${escapeHtml(s.id)}" disabled /></div>
         <div class="row-grid">
             <div class="row"><label>שם משפחה (חובה):</label><input id="in-st-ln" value="${escapeHtml(s.lastName || '')}" /></div>
@@ -2278,6 +2904,20 @@
             <div class="row"><label>קבוצה (גל):</label><input id="in-st-groupname" value="${escapeHtml(s.groupName || '')}" /></div>
         </div>
         <hr style="border:0; border-top: 1px solid var(--border); margin: 10px 0;">
+        
+        <!-- חדש: סעיף תגיות -->
+        <div class="row">
+            <label style="font-weight: 700;">תגיות וסטטוסים מיוחדים:</label>
+            <div id="tags-selector" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                ${tagsHtml}
+            </div>
+        </div>
+        <div id="tag-dates-container" class="row">
+            <!-- יטען באופן דינמי על ידי JS -->
+        </div>
+        <!-- סוף סעיף תגיות -->
+
+        <hr style="border:0; border-top: 1px solid var(--border); margin: 10px 0;">
         <div class="row-grid-3">
             <div class="row"><label>ישוב:</label><input id="in-st-city" value="${escapeHtml(s.city || '')}" /></div>
             <div class="row"><label>רחוב:</label><input id="in-st-street" value="${escapeHtml(s.street || '')}" /></div>
@@ -2285,9 +2925,23 @@
         </div>
         <div class="row"><label>נייד תלמיד:</label><input id="in-st-phone" type="tel" value="${escapeHtml(s.phone || '')}" /></div>
         <div class="row" style="margin-top: 5px;"><small class="muted">לא ניתן לשנות את המזהה הראשי. ניתן לעדכן את שדות הת.ז/דרכון המקוריים.</small></div>
-      `,
+      `;
+      
+      showModal('עריכת פרטי בחור', modalHtml,
       ()=>{
-        // אסוף את כל הנתונים מהטופס
+        // 1. קבץ את התגיות הנבחרות
+        const selectedTags = els('#tags-selector .tag-checkbox:checked').map(cb => cb.value);
+        
+        // 2. קבץ את נתוני הסטטוס (תאריכים)
+        const statusData = {};
+        if (selectedTags.includes('מאורס')) {
+            statusData.wedding_date = el('#in-wedding-date') ? el('#in-wedding-date').value : '';
+        }
+        if (selectedTags.includes('חיזוק')) {
+            statusData.return_date = el('#in-return-date') ? el('#in-return-date').value : '';
+        }
+
+        // 3. אסוף את כל הנתונים מהטופס
         const studentData = {
           lastName: el('#in-st-ln').value,
           firstName: el('#in-st-fn').value,
@@ -2299,17 +2953,26 @@
           street: el('#in-st-street').value,
           houseNum: el('#in-st-housenum').value,
           city: el('#in-st-city').value,
-          phone: el('#in-st-phone').value
+          phone: el('#in-st-phone').value,
+          tags: selectedTags, // חדש
+          status_data: statusData // חדש
         };
         const [ok, msg] = updateStudent(s.id, studentData); // קרא ללוגיקת העדכון
         if (!ok) errorDialog(msg);
       }, ()=>{});
+      
+      // חבר מאזינים לשינוי תגיות לאחר שהמודאל נטען
+      els('.tag-checkbox').forEach(cb => {
+          cb.addEventListener('change', () => updateTagDatesUI(s));
+      });
+      
+      // רינדור ראשוני של שדות התאריך
+      updateTagDatesUI(s);
       el('#in-st-ln').focus();
     }
 
     // שינוי: כפתור עריכה קורא לפונקציה החדשה
     el('#btn-edit-student').addEventListener('click', promptEditSelectedStudent);
-    // --- *** סוף התיקון *** ---
 
 
     // מחיקת בחור נבחר
@@ -2352,11 +3015,25 @@
     /**
      * פונקציית רענון מרכזית.
      * קוראת לכל פונקציות הרינדור והעדכון הנדרשות.
+     * @param {number|null} [scrollToId=null] - מזהה פריט (כגון מיטה) שיש לגלול אליו לאחר הרענון.
      */
-    function refreshAll() {
-      renderTree(); // רנדר עץ
+    function refreshAll(scrollToId = null) {
+      // חדש: קבל את מחרוזת החיפוש של החדרים
+      const roomFilter = el('#search-rooms') ? el('#search-rooms').value : '';
+      renderTree(roomFilter); // רנדר עץ עם פילטר
       renderStudents(el('#search-student').value || ''); // רנדר טבלת בחורים (עם פילטר קיים)
       updateActionsPanel(); // עדכן פאנל פעולות (למקרה שהבחירה אופסה)
+
+      // חדש: לוגיקת גלילה
+      if (scrollToId) {
+        setTimeout(() => {
+          const targetEl = el(`.bed-cell[data-id="${scrollToId}"]`);
+          if (targetEl) {
+            // גלילה לתוך הקונטיינר של העץ
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 50);
+      }
     }
 
     // ==================================================
