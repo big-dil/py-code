@@ -1,5 +1,5 @@
 // ==================================================
-//      קובץ 8: ניהול טבלת תלמידים (AG Grid)
+//      קובץ 8: ניהול טבלת תלמידים (AG Grid Enterprise)
 // ==================================================
 
 // משתנה גלובלי לאינסטנס של הטבלה
@@ -13,8 +13,8 @@ function onStudentSelected(id) {
     selectedStudentId = id;
     const hasSelection = !!selectedStudentId;
     
-    const btnEdit = el('#btn-edit-student');
-    const btnDel = el('#btn-del-student');
+    const btnEdit = document.querySelector('#btn-edit-student');
+    const btnDel = document.querySelector('#btn-del-student');
     
     if (btnEdit) btnEdit.disabled = !hasSelection;
     if (btnDel) btnDel.disabled = !hasSelection;
@@ -33,14 +33,16 @@ const gridColumnDefs = [
         width: 130, 
         pinned: 'right', 
         checkboxSelection: true, 
-        headerCheckboxSelection: true 
+        headerCheckboxSelection: true,
+        enableRowGroup: true // מאפשר לקבץ לפי עמודה זו (Enterprise)
     },
     { 
         headerName: "שם פרטי", 
         field: "firstName", 
         sortable: true, 
         filter: true, 
-        width: 130 
+        width: 130,
+        enableRowGroup: true 
     },
     { 
         headerName: "סטטוס / תגיות", 
@@ -49,6 +51,7 @@ const gridColumnDefs = [
         filter: false, 
         flex: 1, 
         minWidth: 150,
+        enableRowGroup: true,
         cellRenderer: (params) => {
             if (!params.value || params.value.length === 0) return '';
             return params.value.map(tag => {
@@ -85,14 +88,16 @@ const gridColumnDefs = [
         field: "className", 
         sortable: true, 
         filter: true, 
-        width: 90 
+        width: 90,
+        enableRowGroup: true
     },
     { 
         headerName: "ישוב", 
         field: "city", 
         sortable: true, 
         filter: true, 
-        width: 110 
+        width: 110,
+        enableRowGroup: true
     },
     { 
         headerName: "טלפון", 
@@ -108,7 +113,9 @@ const gridColumnDefs = [
         filter: 'agTextColumnFilter', 
         flex: 1,
         minWidth: 200,
+        enableRowGroup: true,
         cellStyle: params => {
+            if (!params.value) return null;
             // צבע ירוק אם משובץ, אדום אם לא
             return { 
                 color: params.value.includes('לא משובץ') ? '#ef4444' : '#10b981',
@@ -125,18 +132,35 @@ const gridColumnDefs = [
 const gridOptions = {
     columnDefs: gridColumnDefs,
     rowData: [], 
+    
+    // הגדרות כיוון ושפה (חשוב!)
     enableRtl: true, 
+    localeText: typeof AG_GRID_LOCALE_IL !== 'undefined' ? AG_GRID_LOCALE_IL : undefined, 
+
+    // הגדרות בחירה ותצוגה
     rowSelection: 'single', 
     animateRows: true, 
     rowHeight: 45, 
+
+    // --- הגדרות Enterprise ---
+    enableRangeSelection: true,   // מאפשר גרירת בחירה על תאים (כמו אקסל)
+    rowGroupPanelShow: 'always',  // מציג את אזור הגרירה לקיבוץ בראש הטבלה
+    suppressContextMenu: false,   // מאפשר תפריט קליק ימני (ברירת מחדל ב-Enterprise)
     
-    // תרגום טקסטים לעברית
-    localeText: {
-        filterOoo: 'סינון...', equals: 'שווה ל', notEqual: 'לא שווה ל',
-        contains: 'מכיל', notContains: 'לא מכיל', startsWith: 'מתחיל ב', endsWith: 'נגמר ב',
-        noRowsToShow: 'אין נתונים להצגה', loadingOoo: 'טוען נתונים...'
+    // הגדרת תפריט קליק ימני מותאם אישית (אופציונלי)
+    getContextMenuItems: (params) => {
+        return [
+            'copy',
+            'copyWithHeaders',
+            'separator',
+            'export', // מאפשר ייצוא לאקסל ול-CSV
+            'separator',
+            'autoSizeAll',
+            'resetColumns'
+        ];
     },
 
+    // אירועים
     onSelectionChanged: (event) => {
         const selectedRows = gridApi.getSelectedRows();
         if (selectedRows.length > 0) {
@@ -147,10 +171,13 @@ const gridOptions = {
     },
 
     onRowDoubleClicked: (event) => {
-        selectedStudentId = event.data.id;
-        // פונקציה מקובץ prompts.js
-        if (typeof promptEditSelectedStudent === 'function') {
-            promptEditSelectedStudent();
+        // בודק שזו שורת נתונים ולא שורת קבוצה (Group Row)
+        if (event.data && event.data.id) {
+            selectedStudentId = event.data.id;
+            // פונקציה מקובץ prompts.js
+            if (typeof promptEditSelectedStudent === 'function') {
+                promptEditSelectedStudent();
+            }
         }
     }
 };
@@ -162,12 +189,13 @@ const gridOptions = {
 function renderStudents(filter = '') {
     const gridDiv = document.querySelector('#myGrid');
     
-    // תיקון באג: מניעת רינדור אם הקונטיינר מוסתר (מונע עיוותים ב-AG Grid)
+    // מניעת שגיאות אם האלמנט לא קיים או מוסתר
     if (!gridDiv || gridDiv.offsetParent === null) {
         return;
     }
 
     // הכנת המידע לתצוגה (הוספת שדה מחושב של מיקום)
+    // הערה: ב-Enterprise זה יעבוד גם עם קיבוץ, כיוון שהמידע השטוח מועבר ל-ag-grid שמבצע את הקיבוץ לבד
     const rowData = DB.students.map(s => {
         let locationText = 'לא משובץ';
         const loc = getStudentBed(s.id);
@@ -191,7 +219,7 @@ function renderStudents(filter = '') {
         // שחזור בחירה אם הייתה
         if (selectedStudentId) {
             gridApi.forEachNode(node => {
-                if (node.data.id === selectedStudentId) {
+                if (node.data && node.data.id === selectedStudentId) {
                     node.setSelected(true);
                 }
             });
