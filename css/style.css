@@ -472,3 +472,11 @@ tbody tr.selected { outline: 2px solid var(--accent) !important; }
     display: flex;
     flex-direction: column;
 }
+
+#pane-students {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
