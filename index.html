@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>מערכת ניהול פנימייה Pro Max — גרסה 5.3 (תאריכים עבריים)</title>
+  
+  <!-- ספריות חיצוניות (AG Grid) -->
+  <script src="https://cdn.jsdelivr.net/npm/ag-grid-enterprise@31.0.0/dist/ag-grid-enterprise.min.js"></script>
+  
+  <script src="js/ag-grid-locale-il.js"></script> 
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.0.0/styles/ag-grid.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.0.0/styles/ag-theme-alpine.css" />
+
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- קובץ עיצוב חיצוני -->
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div class="app">
+    <!-- תפריט צד (Sidebar) -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <svg style="width:24px;height:24px;margin-left:8px;color:var(--accent)" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3zm5 15h-2v-6H9v6H7v-7.81l5-4.5 5 4.5V18z"/><path opacity=".3" d="M7 10.19V18h2v-6h6v6h2v-7.81l-5-4.5z"/></svg>
+        מערכת פנימייה
+      </div>
+      
+      <nav class="sidebar-menu">
+        <div class="menu-item active" id="menu-status-board">
+          <svg class="menu-icon" viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+          לוח סטטוסים
+        </div>
+
+        <div class="menu-item" id="menu-manage">
+          <svg class="menu-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+          ניהול ושיבוצים
+        </div>
+
+        <div class="menu-item" id="menu-students">
+           <svg class="menu-icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          ניהול בחורים
+        </div>
+
+        <div class="menu-item" id="menu-reports">
+          <svg class="menu-icon" viewBox="0 0 24 24"><path d="M8 10h8v2H8v-2zm0 4h8v2H8v-2zm0-8h8v2H8V6zM19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/></svg>
+          דוחות
+        </div>
+
+        <div class="menu-item" id="menu-audit">
+          <svg class="menu-icon" viewBox="0 0 24 24"><path d="M13 12h-2v5h2v-5zm0-4h-2v2h2V8zM19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/></svg>
+          היסטוריית שינויים
+        </div>
+        
+        <div class="menu-item" id="menu-settings">
+            <svg class="menu-icon" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.57 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+            הגדרות (בקרוב)
+        </div>
+      </nav>
+      
+      <div style="margin-top: auto; padding: 20px; font-size: 0.8rem; color: #94a3b8; text-align: center;">
+        גרסה 5.4 Pro Max
+      </div>
+    </aside>
+
+    <main class="app-content">
+      
+      <header>
+        <h1 style="font-size: 1.5rem; margin: 0;">לוח בקרה ראשי</h1>
+      </header>
+
+      <!-- מסך ניהול ושיבוצים -->
+      <section id="pane-manage" class="main">
+        <div class="card tree-wrap">
+          <div class="tree-header">
+            <div class="stats">
+              <div class="stat" id="stat-students">בחורים: 0</div>
+              <div class="stat" id="stat-unassigned">לא משובצים: 0</div>
+              <div class="stat" id="stat-assigned">משובצים: 0</div>
+              <div class="stat" id="stat-beds-free">מיטות פנויות: 0</div>
+            </div>
+            <div class="row-inline" style="gap: 12px; margin-right: auto;">
+              <button class="btn secondary" id="btn-export-db">גיבוי ל-JSON</button>
+              <button class="btn secondary" id="btn-import-db">טען גיבוי</button>
+              <button class="btn danger" id="btn-reset-data">איפוס נתונים</button>
+            </div>
+            <div class="row-inline">
+              <button class="btn primary" id="btn-add-building">הוסף מבנה חדש</button>
+            </div>
+          </div>
+          
+          <div class="tree-toolbar">
+              <input id="search-rooms" class="search" placeholder="חפש חדר (לפי מספר) או בחור משובץ..." />
+          </div>
+          
+          <div class="tree" id="tree"></div>
+        </div>
+
+        <aside class="card actions" id="actions">
+          <div class="pane-toggle" id="actions-pane-toggle" data-pane="actions" title="הצג/הסתר פאנל">
+            <svg viewBox="0 0 24 24"><path d="M15.78 11.29l-4.58-4.58a.996.996 0 10-1.41 1.41L13.66 12l-3.87 3.88a.996.996 0 101.41 1.41l4.58-4.58a.993.993 0 000-1.42z"/></svg>
+          </div>
+          <h3 id="actions-title">בחר פריט מהעץ</h3>
+          <div class="muted" id="actions-details">—</div>
+          <div id="actions-buttons" style="display: grid; gap: 8px; grid-auto-rows: min-content;"></div>
+          <div id="bed-history" class="hidden"></div>
+          <div style="margin-top:auto"></div>
+          <button class="btn danger" id="btn-delete" disabled>מחק פריט נבחר</button>
+        </aside>
+      </section>
+
+      <!-- מסך ניהול בחורים -->
+      <section id="pane-students" class="hidden" style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.25rem; flex: 1; min-height: 0;">
+        <!-- Left Column: Grid -->
+        <div class="card students" style="padding: 1rem; display: flex; flex-direction: column; gap: 1rem;">
+          <div class="toolbar">
+            <input id="search-student" class="search" placeholder="חפש בחור..." /> 
+            <button class="btn primary" id="btn-add-student">הוסף בחור חדש</button>
+            <button class="btn secondary" id="btn-import-students">ייבוא CSV</button>
+            <button class="btn secondary" id = "btn-export-students-csv">ייצוא CSV</button>
+          </div>
+          <input type="file" id="csv-file-input" accept=".csv" class="hidden" />
+          <input type="file" id="json-file-input" accept="application/json" class="hidden" />
+          
+          <div id="myGrid" class="ag-theme-alpine"></div>
+        </div>
+        
+        <!-- Right Column: Timeline -->
+        <div id="student-timeline-panel" class="card" style="padding: 1.25rem; display: flex; flex-direction: column; opacity: 0; transition: opacity 0.3s ease; position: relative;">
+            <div class="pane-toggle" id="timeline-pane-toggle" data-pane="timeline" title="הצג/הסתר ציר זמן">
+              <svg viewBox="0 0 24 24"><path d="M15.78 11.29l-4.58-4.58a.996.996 0 10-1.41 1.41L13.66 12l-3.87 3.88a.996.996 0 101.41 1.41l4.58-4.58a.993.993 0 000-1.42z"/></svg>
+            </div>
+            <div id="timeline-header" style="padding-bottom: 1rem; border-bottom: 1px solid var(--border); margin-bottom: 1rem;">
+                <h3 id="timeline-student-name" style="margin: 0;">בחר בחור להצגת היסטוריה</h3>
+                <div id="timeline-actions" style="margin-top: 0.5rem;"></div>
+            </div>
+            <div id="timeline-container" style="flex: 1; overflow-y: auto;">
+                <p class="muted">...</p>
+            </div>
+        </div>
+      </section>
+
+      <!-- מסך דוחות -->
+      <section id="pane-reports" class="hidden" style="display: flex; flex-direction: column; gap: 1.25rem;">
+        <div id="reports-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem;">
+          <!-- Report cards will be inserted here by JS -->
+        </div>
+        <div class="card" style="padding: 1rem; display:flex; flex-direction:column; gap: 1rem; flex: 1;">
+            <div id="charts-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; flex: 1;">
+                <div class="chart-wrapper" style="position: relative; height: 100%;"><canvas id="chart-by-class"></canvas></div>
+                <div class="chart-wrapper" style="position: relative; height: 100%;"><canvas id="chart-by-city"></canvas></div>
+            </div>
+        </div>
+      </section>
+
+      <!-- מסך היסטוריית שינויים -->
+      <section id="pane-audit" class="hidden" style="display: flex; flex-direction: column;">
+          <div class="card" style="flex: 1; padding: 1rem; display: flex; flex-direction: column; min-height: 0;">
+              <div id="audit-log-container" style="flex: 1; overflow-y: auto;">
+                  <!-- Audit log entries will be inserted here -->
+              </div>
+          </div>
+      </section>
+
+      <!-- לוח סטטוסים -->
+      <section id="pane-status-board" class="hidden" style="display: flex; flex-direction: column; gap: 1rem; flex: 1; min-height: 0;">
+        <div id="status-board-container" style="display: flex; gap: 1rem; flex: 1; overflow-x: auto;">
+          <!-- Status columns will be inserted here by JS -->
+        </div>
+      </section>
+
+    </main>
+</div>
+
+  <!-- מודאל כללי (Pop-up) -->
+  <div class="modal-backdrop hidden" id="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <h4 id="modal-title">כותרת</h4>
+      <div id="modal-body"></div>
+      <div class="row-inline" style="justify-content: flex-start; margin-top: 10px;">
+        <button class="btn primary" id="modal-ok">אישור</button>
+        <button class="btn" id="modal-cancel">ביטול</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- טעינת סקריפטים מודולרית -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.2.0/dist/chart.umd.js"></script>
+  <script type="module" src="js/99-main.js"></script>
+
+</body>
+</html>
+
