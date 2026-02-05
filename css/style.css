@@ -417,6 +417,29 @@ input:focus, select:focus, textarea:focus {
 }
 #myGrid { flex: 1; height: auto !important; width: 100%; }
 
+/*הרחבה וכיווץ לציר הזמן בכרטיסיה 'ניהול בחורים'*/
+/* פריסת ברירת מחדל למסך תלמידים */
+#pane-students {
+    display: grid;
+    grid-template-columns: 2fr 1fr; /* יחס של 2 ל-1 בין הטבלה לציר הזמן */
+    gap: 1.25rem;
+    flex: 1;
+    min-height: 0;
+}
+
+/* מצב מכווץ */
+#pane-students.timeline-collapsed {
+    grid-template-columns: 1fr 0px; /* הטבלה תופסת הכל, ציר הזמן נעלם */
+    gap: 0;
+}
+
+/* הבטחת נראות כפתור הכיווץ */
+#pane-students.timeline-collapsed #student-timeline-panel {
+    padding: 0;
+    overflow: visible; /* חשוב! כדי שהכפתור לא ייחתך כשהרוחב הוא 0 */
+    border: none;
+}
+
 /* ==================================== */
 /*         Modals & Pop-ups             */
 /* ==================================== */
