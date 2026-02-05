@@ -126,14 +126,23 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Pane Toggles
+// Pane Toggles
         const toggle = target.closest('.pane-toggle');
         if (toggle) {
             const paneType = toggle.dataset.pane;
             if (paneType === 'actions') {
                 el('.main').classList.toggle('actions-collapsed');
             } else if (paneType === 'timeline') {
+                // ביצוע הכיווץ/הרחבה של הפאנל
                 el('#pane-students').classList.toggle('timeline-collapsed');
+                
+                // עדכון הטבלה שתתפוס את כל השטח שהתפנה
+                setTimeout(() => {
+                    const gridApi = getGridApi();
+                    if (gridApi) {
+                        gridApi.sizeColumnsToFit(); // פקודה למתיחת העמודות לכל רוחב המיכל
+                    }
+                }, 250); // המתנה קצרה לסיום האנימציה של ה-CSS
             }
         }
     });
